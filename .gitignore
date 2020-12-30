@@ -1,0 +1,4 @@
+.tox
+.local
+__pycache__
+gen/glang*
