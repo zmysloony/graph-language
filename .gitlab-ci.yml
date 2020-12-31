@@ -1,10 +1,11 @@
-setup:
-    script:
-        - apt-get update -qy
-        - apt-get install -y python-dev python-pip tox
+stages:
+    - run_tox
+
+before_script:
+    - apt-get update -qy
+    - apt-get install -y python-dev python-pip tox
 
 run_tox:
-    needs:
-        [setup]
+    stage: run_tox
     script:
         - tox
