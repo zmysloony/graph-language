@@ -3,7 +3,7 @@ stages:
 
 before_script:
     - apt-get update -qy
-    - apt-get install -y python-dev python-pip tox
+    - apt-get install -y python3.8 python3-dev python3-pip tox
 
 run_tox:
     stage: run_tox
