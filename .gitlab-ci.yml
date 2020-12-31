@@ -1,15 +1,9 @@
-stages:
-    - setup
-    - run_tox
-
 setup:
-    stage: setup
     script:
         - apt-get update -qy
         - apt-get install -y python-dev python-pip tox
 
 run_tox:
-    stage: run_tox
     dependencies:
         - setup
     script:
