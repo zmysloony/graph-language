@@ -4,7 +4,5 @@ setup:
         - apt-get install -y python-dev python-pip tox
 
 run_tox:
-    dependencies:
-        - setup
     script:
         - tox
