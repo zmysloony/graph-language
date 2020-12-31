@@ -6,11 +6,11 @@ setup:
     stage: setup
     script:
         - apt-get update -qy
-        - apt-get install -y python-dev python-pip
-        - pip install tox
-        - tox
+        - apt-get install -y python-dev python-pip tox
 
 run_tox:
     stage: run_tox
+    dependencies:
+        - setup
     script:
         - tox
