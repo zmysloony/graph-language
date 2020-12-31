@@ -8,6 +8,7 @@ setup:
         - apt-get update -qy
         - apt-get install -y python-dev python-pip
         - pip install tox
+        - tox
 
 run_tox:
     stage: run_tox
