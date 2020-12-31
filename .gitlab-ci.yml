@@ -3,8 +3,7 @@ stages:
 
 before_script:
     - apt-get update -qy
-    - apt-get install -y tox
-    - sudo apt install default-jre
+    - apt-get install -y tox default-jre
 
 run_tox:
     image: python:3.8-slim
