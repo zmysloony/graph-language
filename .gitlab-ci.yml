@@ -2,6 +2,7 @@ stages:
     - run_tox
 
 before_script:
+    - mkdir -p /usr/share/man/man1
     - apt-get update -qy
     - apt-get install -y tox default-jre
 
