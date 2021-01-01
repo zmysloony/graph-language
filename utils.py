@@ -1,4 +1,32 @@
+from antlr4 import InputStream
 from antlr4.error.ErrorListener import ErrorListener
+
+from gen.glangLexer import glangLexer
+
+
+def assert_tokens(tokens, types):
+	for token, t in zip(tokens, types):
+		if t is None:
+			continue
+		if isinstance(t, (tuple, list)):
+			assert token.type == t[0]
+			assert token.text == t[1]
+		else:
+			assert token.type == t
+
+
+def print_tokens(tokens):
+	for token in tokens:
+		print('{}: "{}"'.format(glangLexer.symbolicNames[token.type], token.text))
+
+
+def glex(text, return_lexer=False):
+	lexer = glangLexer(InputStream(text))
+	lexer.removeErrorListeners()
+	lexer._listeners = [LexerErrorListener()]
+	if return_lexer:
+		return lexer
+	return lexer.getAllTokens()
 
 
 class LexerSyntaxException(Exception):
