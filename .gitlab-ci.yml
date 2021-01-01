@@ -2,10 +2,12 @@ stages:
     - run_tox
 
 before_script:
+    - mkdir -p /usr/share/man/man1
     - apt-get update -qy
-    - apt-get install -y python-dev python-pip tox
+    - apt-get install -y tox default-jre
 
 run_tox:
+    image: python:3.8-slim
     stage: run_tox
     script:
         - tox
