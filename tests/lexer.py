@@ -1,6 +1,7 @@
 from antlr4 import InputStream
 
 from gen.glangLexer import glangLexer as gl
+from utils import LexerErrorListener, LexerSyntaxException
 
 
 def assert_tokens(tokens, types):
@@ -20,7 +21,10 @@ def print_tokens(tokens):
 
 
 def glex(text):
-	return gl(InputStream(text)).getAllTokens()
+	lexer = gl(InputStream(text))
+	lexer.removeErrorListeners()
+	lexer._listeners = [LexerErrorListener()]
+	return lexer.getAllTokens()
 
 
 def test_numbers_integers():
@@ -28,12 +32,18 @@ def test_numbers_integers():
 	assert_tokens(tokens, (gl.INTEGER, gl.NUMBER, gl.NUMBER))
 
 
+def test_basic_math_ops():
+	tokens = glex('100 + 12.12 - 00.23')
+	assert_tokens(tokens, (gl.INTEGER, gl.PLUS, gl.NUMBER, gl.MINUS, gl.NUMBER))
+	tokens = glex('(1234+4321) / 4')
+	assert_tokens(tokens, (gl.L, gl.INTEGER, gl.PLUS, gl.INTEGER, gl.R, gl.DIV, gl.INTEGER))
+
+
 def test_color_assignment():
+	# color correct
 	tokens = glex('red = #f01234')
 	assert_tokens(tokens, (gl.IDENTIFIER, gl.ASSIGNMENT, gl.COLOR))
-
-
-def test_color_too_long():
+	# color too long
 	tokens = glex('#f01234567f')
 	assert_tokens(tokens, (gl.COLOR, (gl.INTEGER, '567'), (gl.IDENTIFIER, 'f')))
 
@@ -44,5 +54,15 @@ def test_chart_points_assignment():
 		gl.IDENTIFIER, gl.ASSIGNMENT, gl.SQ_L, gl.LT, gl.STRING, gl.COMMA, gl.INTEGER, gl.COMMA, gl.IDENTIFIER,
 		gl.GT, gl.COMMA, gl.LT, gl.STRING, gl.COMMA, gl.INTEGER, gl.COMMA, gl.IDENTIFIER, gl.GT, gl.SQ_R
 	))
+
+
+def test_unrecognized():
+	try:
+		tokens = glex('`')
+	except LexerSyntaxException:
+		assert True
+		return
+	assert False
+
 
 

@@ -1,11 +1,4 @@
 grammar glang;
-fragment LETTER : [a-z] | [A-Z] ;
-fragment DIGIT : [0-9] ;
-fragment HEX_SYMBOL : [a-f] | [A-F] | [0-9] ;
-fragment SYMBOL : '[' | ']' | '(' | ')' | '{' | '}' | '<' | '>' | '-' | '|' | '.' | ',' | ';' | '=' | '+' | '*' | '&' | '^' | '%' | '$' | '#' | '@' | '!' | '?' | '/';
-fragment CHAR : LETTER | DIGIT | '_' | WS | SYMBOL ;
-WS : (' ')+ -> skip ;
-
 // operators
 PROP_ACCESS : '.' ;
 ASSIGNMENT : '=' ;
@@ -58,6 +51,14 @@ STRING : '"' (CHAR | '\'' )+ '"' | '\'' (CHAR | '"')+ '\'' ;
 COLOR : '#' HEX_SYMBOL HEX_SYMBOL HEX_SYMBOL HEX_SYMBOL HEX_SYMBOL HEX_SYMBOL ;
 
 IDENTIFIER : (LETTER | '_') (LETTER | DIGIT | '_')* ;
+
+fragment LETTER : [a-z] | [A-Z] ;
+fragment DIGIT : [0-9] ;
+fragment HEX_SYMBOL : [a-f] | [A-F] | [0-9] ;
+fragment SYMBOL : '[' | ']' | '(' | ')' | '{' | '}' | '<' | '>' | '-' | '|' | '.' | ',' | ';' | '=' | '+' | '*' | '&' |
+				  '^' | '%' | '$' | '#' | '@' | '!' | '?' | '/' | '~' ;
+fragment CHAR : LETTER | DIGIT | '_' | WS | SYMBOL ;
+WS : (' ')+ -> skip ;
 
 //DATA_POINT : '<' (STRING | NUMBER) ',' NUMBER '>' ;
 //DATA_POINT_W_COLOR : '<' (STRING | NUMBER) ',' NUMBER ',' (COLOR | IDENTIFIER) '>' ;
