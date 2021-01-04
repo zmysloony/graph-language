@@ -3,13 +3,16 @@ import typing
 from antlr4 import ParserRuleContext
 from antlr4.tree.Tree import TerminalNodeImpl
 
-from visitor import exceptions
+from visitor import exceptions, types
 
 
 class Var:
 	def __init__(self, value, value_type):
 		self.value = value
 		self.type = value_type
+
+	def __str__(self):
+		return 'value: {}, type: {}'.format(self.value, self.type)
 
 
 class VarTree:
@@ -28,10 +31,11 @@ class VarTree:
 		"""Resets the variable if it exists, if not - creates an empty one."""
 		return self.set(identifier, None, None)
 
-	def get(self, identifier, expected_types=None) -> Var:
+	def get(self, identifier, expected_types=None, raw_text_identifier=False) -> Var:
 		node, var = self, None
+		id_text = identifier if raw_text_identifier else identifier.symbol.text
 		while node:
-			var = node.variables.get(identifier.symbol.text)
+			var = node.variables.get(id_text)
 			if var:
 				break
 			node = node.exit()
@@ -57,15 +61,28 @@ class VarTree:
 		node.variables[identifier.symbol.text] = Var(value, value_type)
 		return node.variables[identifier.symbol.text]
 
+	def assert_variable(self, identifier, value=None, value_type=None):
+		var = self.get(identifier, raw_text_identifier=True)
+		if value is not None:
+			assert var.value == value
+		if value_type is not None:
+			assert var.type == value_type
+
 
 class DataPoint:
 	def __init__(self, x, y, color=None):
-		self.x, self.y, color = x, y, color
+		self.x, self.y, self.color = x, y, color if color else Var(None, types.COLOR)
+
+	def __str__(self):
+		return '<{}, {}, {}>'.format(self.x.value, self.y.value, self.color.value)
 
 
 class NamedValue:
-	def __init__(self, name, value, color=None):
-		self.name, self.value, self.color = name, value, color
+	def __init__(self, label, value, color=None):
+		self.label, self.value, self.color = label, value, color if color else Var(None, types.COLOR)
+
+	def __str__(self):
+		return '<{}, {}, {}>'.format(self.label.value, self.value.value, self.color.value)
 
 
 def to_number_or_int(node: TerminalNodeImpl):

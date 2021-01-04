@@ -33,6 +33,3 @@ def test_unrecognized():
 		assert True
 		return
 	assert False
-
-
-

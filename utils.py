@@ -1,7 +1,10 @@
+import antlr4
 from antlr4 import InputStream
 from antlr4.error.ErrorListener import ErrorListener
 
 from gen.glangLexer import glangLexer
+from gen.glangParser import glangParser
+from visitor.core import GVisitor
 
 
 def assert_tokens(tokens, types):
@@ -27,6 +30,17 @@ def glex(text, return_lexer=False):
 	if return_lexer:
 		return lexer
 	return lexer.getAllTokens()
+
+
+def gparse(text, return_visitor=True):
+	lexer = glex(text, return_lexer=True)
+	stream = antlr4.CommonTokenStream(lexer)
+	parser = glangParser(stream)
+	tree = parser.script()
+	visitor = GVisitor()
+	visitor.visit(tree)
+	if return_visitor:
+		return visitor
 
 
 class LexerSyntaxException(Exception):

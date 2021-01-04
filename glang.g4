@@ -17,7 +17,7 @@ EMPTY_ARRAY: SQ_L SQ_R ;
 NULL: 'null' ;
 TRUE: 'true' ;
 FALSE: 'false' ;
-NUMBER: ( DIGIT+ '.' DIGIT+ ) | INTEGER ;
+NUMBER: MINUS? (( DIGIT+ '.' DIGIT+ ) | INTEGER) ;
 INTEGER: DIGIT+ ;
 STRING: '"' (CHAR | '\'' )+ '"' | '\'' (CHAR | '"')+ '\'' ;
 COLOR: '#' HEX_SYMBOL HEX_SYMBOL HEX_SYMBOL HEX_SYMBOL HEX_SYMBOL HEX_SYMBOL ;
@@ -79,15 +79,20 @@ WS: [ \r\n\t] + -> skip ;
 script: (function | sequential_code)* ;
 array: EMPTY_ARRAY | (SQ_L (r_value_list | r_value) SQ_R) ;
 
+// basic data types
+string: STRING ;
+number: NUMBER ;
+color: COLOR ;
+
 // data types for charts
-data_point: LT NUMBER COMMA NUMBER GT ;
-data_point_colored: LT NUMBER COMMA NUMBER COMMA (COLOR | IDENTIFIER) GT ;
-named_value: LT STRING COMMA NUMBER GT ;
-named_value_colored: LT STRING COMMA NUMBER COMMA (COLOR | IDENTIFIER) GT ;
+data_point: LT x=number COMMA y=number GT ;
+data_point_colored: LT x=number COMMA y=number COMMA (color | identifier_ext) GT ;
+named_value: LT label=string COMMA value=number GT ;
+named_value_colored: LT label=string COMMA value=number COMMA (color | identifier_ext) GT ;
 
 // json data type
 j_value
-: (j_object  | STRING | NUMBER | TRUE | FALSE | NULL)	#regularJValue
+: (j_object  | string | number | boolean | NULL)		#regularJValue
 | (SQ_L j_value (COMMA j_value)* SQ_R)					#arrayJValue
 ;
 j_member: IDENTIFIER SC j_value ;
@@ -106,19 +111,6 @@ for_loop: FOR L operation? SC logical_expression SC operation? R segment ;
 // conditionals
 if_cond: IF L logical_expression R segment ;
 
-// logical
-logical_expression
-: L logical_expression R											#parenExpression
-| NOT logical_expression											#notExpression
-| left=logical_expression op=comparator right=logical_expression	#comparatorExpression
-| left=logical_expression op=binary right=logical_expression		#binaryExpression
-| boolean															#boolExpression
-| l_value															#identifierExpression
-| NUMBER															#decimalExpression
-;
-comparator: GT | GTE | LT | LTE | EQ | NEQ;
-binary: AND | OR ;
-boolean: TRUE | FALSE ;
 
 // math
 math_expression
@@ -126,7 +118,7 @@ math_expression
 |   MINUS math_expression											#unaryMinus
 |   left=math_expression op=(MUL | DIV)  right=math_expression		#mulDiv
 |   left=math_expression op=(PLUS | MINUS) right=math_expression	#addSub
-|   (NUMBER | IDENTIFIER)                           				#element
+|   (number | identifier_ext)                           			#element
 ;
 
 // r-value and l-value
@@ -138,8 +130,27 @@ identifier_ext
 ;
 l_value: COLOR_SIGN? identifier_ext ;
 r_value_list: (r_value COMMA)+ r_value ;
-r_value: IDENTIFIER | STRING | NUMBER | array | data_point | data_point_colored | named_value | named_value_colored
-		  | logical_expression | math_expression | function_call | j_string | TRUE | FALSE | NULL | COLOR;
+r_value
+: (array | data_point | data_point_colored | named_value | named_value_colored | j_string | string | number | color)	#varRValue
+| (COLOR_SIGN? identifier_ext)																#identifierRValue
+| function_call																				#functionRValue
+| (logical_expression | math_expression)													#evalRValue
+| NULL																						#nullRValue
+;
+
+// logical
+logical_expression
+: L logical_expression R											#parenLExpression
+| NOT logical_expression											#notLExpression
+| left=logical_expression op=comparator right=logical_expression	#comparatorLExpression
+| left=logical_expression op=binary right=logical_expression		#binaryLExpression
+| boolean															#boolLExpression
+| l_value															#identifierLExpression
+| number															#decimalLExpression
+;
+comparator: GT | GTE | LT | LTE | EQ | NEQ;
+binary: AND | OR ;
+boolean: TRUE | FALSE ;
 
 // operations
 assignment: l_value ASSIGNMENT r_value ;
