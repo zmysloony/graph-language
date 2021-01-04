@@ -86,8 +86,10 @@ named_value: LT STRING COMMA NUMBER GT ;
 named_value_colored: LT STRING COMMA NUMBER COMMA (COLOR | IDENTIFIER) GT ;
 
 // json data type
-j_array: ;
-j_value: j_object | j_array | STRING | NUMBER | TRUE | FALSE | NULL ;
+j_value
+: (j_object  | STRING | NUMBER | TRUE | FALSE | NULL)	#regularJValue
+| (SQ_L j_value (COMMA j_value)* SQ_R)					#arrayJValue
+;
 j_member: IDENTIFIER SC j_value ;
 j_object: EMPTY_J_OBJECT | ( CURLY_L j_member CURLY_R ) ;
 j_string: J_STRING_MARKER (QUOT j_value QUOT) | (DQUOT j_value DQUOT) ;
@@ -128,10 +130,11 @@ math_expression
 ;
 
 // r-value and l-value
+// TODO add array access by integer identifier
 identifier_ext
 :	identifier_ext DOT IDENTIFIER			#propertyAccess
 |	identifier_ext SQ_L NUMBER SQ_R			#arrayAccess
-| 	IDENTIFIER								#generic
+| 	IDENTIFIER								#genericIdentifier
 ;
 l_value: COLOR_SIGN? identifier_ext ;
 r_value_list: (r_value COMMA)+ r_value ;
@@ -139,11 +142,10 @@ r_value: IDENTIFIER | STRING | NUMBER | array | data_point | data_point_colored 
 		  | logical_expression | math_expression | function_call | j_string | TRUE | FALSE | NULL | COLOR;
 
 // operations
-variable_definition: value_type=IDENTIFIER IDENTIFIER (COMMA IDENTIFIER)* ;
 assignment: l_value ASSIGNMENT r_value ;
 inplace_math_op: l_value op=(MINUS_EQ | PLUS_EQ | DIV_EQ | MUL_EQ) r_value ;
 return_statement: RETURN r_value ;
-operation: assignment | function_call | return_statement | variable_definition | inplace_math_op;
+operation: assignment | function_call | return_statement | inplace_math_op;
 line_operation: operation SC ;
 sequential_code: (line_operation | for_loop | if_cond)+ ;
 segment: CURLY_L sequential_code? CURLY_R ;
