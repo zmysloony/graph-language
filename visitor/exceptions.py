@@ -72,3 +72,22 @@ class ListIndexError(ParsingException):
 
 	def error_msg(self):
 		return 'Trying to access \'{}[{}]\', while it\'s last index is {}.'.format(self.name, self.index, self.max_index)
+
+
+class AmbigiousJsonMember(ParsingException):
+	def __init__(self, rule, member_name):
+		super().__init__(rule)
+		self.member_name = member_name
+
+	def error_msg(self):
+		return 'Ambigious JSON object member named \'{}\'.'.format(self.member_name)
+
+
+class JsonAccessOnNonJsonVariable(ParsingException):
+	def error_msg(self):
+		return 'Trying to use JSON access on a non-JSON variable \'{}\'.'.format(self.name)
+
+
+class IncorrectJsonMemberName(ParsingException):
+	def error_msg(self):
+		return 'Illegal JSON object member name \'{}\''.format(self.name)

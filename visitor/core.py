@@ -39,6 +39,16 @@ class GVisitor(glangVisitor):
 		except AttributeError:
 			raise exceptions.AttributeNotDefined(ctx.identifier_ext(), ctx.IDENTIFIER())
 
+	def visitJsonAccess(self, ctx:glangParser.JsonAccessContext):
+		var = self.visit(ctx.identifier_ext())
+		if var.type != types.J_OBJECT:
+			raise exceptions.JsonAccessOnNonJsonVariable(ctx.identifier_ext())
+		attr_name = self.visit(ctx.string()).value
+		if attr_name in var.value:
+			return var.value[attr_name]
+		else:
+			raise exceptions.AttributeNotDefined(ctx.identifier_ext(), attr_name)
+
 	def visitArrayAccess(self, ctx:glangParser.ArrayAccessContext):
 		var = self.visit(ctx.identifier_ext())
 		if var.type != types.LIST:
@@ -96,8 +106,8 @@ class GVisitor(glangVisitor):
 			return 'True'
 		return 'False'
 
-	def visitString(self, ctx:glangParser.StringContext):
-		return Var(ctx.STRING().getText()[1:-1], types.STRING)
+	def visitString(self, ctx: glangParser.StringContext):
+		return Var(ctx.getText()[1:-1], types.STRING)
 
 	def visitColor(self, ctx:glangParser.ColorContext):
 		return Var(ctx.COLOR().getText(), types.COLOR)
@@ -201,3 +211,33 @@ class GVisitor(glangVisitor):
 			return Var([self.visit(ctx.r_value())], types.LIST)
 		else:
 			return Var(self.visit(ctx.r_value_list()), types.LIST)
+
+	def visitRegularJValue(self, ctx:glangParser.RegularJValueContext):
+		if ctx.boolean():
+			return Var(eval(ctx.boolean()), types.BOOLEAN)
+		else:
+			return self.visitChildren(ctx)
+
+	def visitEmptyArrayJValue(self, ctx:glangParser.EmptyArrayJValueContext):
+		return Var([], types.LIST)
+
+	def visitArrayJValue(self, ctx:glangParser.ArrayJValueContext):
+		array = []
+		for jval in ctx.j_value():
+			array.append(self.visit(jval))
+		return Var(array, types.LIST)
+
+	def visitJ_member(self, ctx:glangParser.J_memberContext):
+		attr_name = self.visit(ctx.string()).value
+		if len(attr_name) == 0:
+			raise exceptions.IncorrectJsonMemberName(ctx.string())
+		return attr_name, self.visit(ctx.j_value())
+
+	def visitJ_object(self, ctx:glangParser.J_objectContext):
+		attributes = {}
+		for member in ctx.j_member():
+			member_calculated = self.visit(member)
+			if member_calculated[0] in attributes:
+				raise exceptions.AmbigiousJsonMember(member, member_calculated[0])
+			attributes[member_calculated[0]] = member_calculated[1]
+		return Var(attributes, types.J_OBJECT)

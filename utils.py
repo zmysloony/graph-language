@@ -1,4 +1,4 @@
-import sys
+import re
 
 import antlr4
 from antlr4 import InputStream
@@ -36,6 +36,7 @@ def glex(text, return_lexer=False):
 
 def gparse(text, return_visitor=True):
 	lexer = glex(text, return_lexer=True)
+	# print_tokens(lexer.getAllTokens())
 	stream = antlr4.CommonTokenStream(lexer)
 	parser = glangParser(stream)
 	parser.removeErrorListeners()
@@ -49,7 +50,11 @@ def gparse(text, return_visitor=True):
 
 class ParserErrorListener(ConsoleErrorListener):
 	INSTANCE = None
+
 	def syntaxError(self, recognizer, offendingSymbol, line, column, msg, e):
+		res = re.search(r"mismatched input '(.+)' expecting {(.+)}", msg)
+		if res is not None:
+			raise UnexpectedToken(line, column, res.group(1), res.group(2), recognizer)
 		raise ParserSyntaxException(line, column, msg)
 
 
@@ -65,7 +70,25 @@ class LexerSyntaxException(Exception):
 
 class ParserSyntaxException(LexerSyntaxException):
 	def __str__(self):
+
 		return 'Parser error ({}, {}): {}'.format(self.line, self.column, self.msg)
+
+
+class UnexpectedToken(ParserSyntaxException):
+	def __init__(self, line, column, token, expected_tokens, recognizer):
+		expected_tokens = expected_tokens.split(', ')
+		literal_expected_tokens = []
+		for t in expected_tokens:
+			name = recognizer.literalNames[getattr(recognizer, t)]
+			if name != '<INVALID>':
+				literal_expected_tokens.append(name)
+		msg = 'Unexpected token \'{}\''.format(token)
+		if len(literal_expected_tokens) != 0:
+			msg += ', expecting \'{}\''.format(literal_expected_tokens[0])
+			for t in literal_expected_tokens[1:]:
+				msg += ' or \'{}\''.format(t)
+		msg += '.'
+		super().__init__(line, column, msg)
 
 
 class LexerErrorListener(ErrorListener):

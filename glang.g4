@@ -8,7 +8,6 @@ RETURN: 'return' ;
 IF: 'if' ;
 ELSE: 'else' ;
 FOR: 'for' ;
-J_STRING_MARKER: 'j' ;
 
 
 // primitive data types
@@ -19,7 +18,8 @@ TRUE: 'true' ;
 FALSE: 'false' ;
 NUMBER: ( DIGIT+ '.' DIGIT+ ) | INTEGER ;
 INTEGER: DIGIT+ ;
-STRING: '"' (CHAR | '\'' )+ '"' | '\'' (CHAR | '"')+ '\'' ;
+STRING: QUOT (CHAR | DQUOT)*? QUOT;
+DQUOT_STRING: DQUOT (CHAR | QUOT)*? DQUOT;
 COLOR: '#' HEX_SYMBOL HEX_SYMBOL HEX_SYMBOL HEX_SYMBOL HEX_SYMBOL HEX_SYMBOL ;
 IDENTIFIER: (LETTER | '_') (LETTER | DIGIT | '_')* ;
 
@@ -68,7 +68,7 @@ fragment LETTER: [a-z] | [A-Z] ;
 fragment DIGIT: [0-9] ;
 fragment HEX_SYMBOL: [a-f] | [A-F] | [0-9] ;
 fragment SYMBOL: '[' | ']' | '(' | ')' | '{' | '}' | '<' | '>' | '-' | '|' | '.' | ',' | ';' | '=' | '+' | '*' | '&' |
-				  '^' | '%' | '$' | '#' | '@' | '!' | '?' | '/' | '~' ;
+				  '^' | '%' | '$' | '#' | '@' | '!' | '?' | '/' | '~' | '"' ;
 fragment CHAR: LETTER | DIGIT | '_' | WS | SYMBOL ;
 WS: [ \r\n\t] + -> skip ;
 
@@ -83,7 +83,7 @@ array
 ;
 
 // basic data types
-string: STRING ;
+string: STRING | DQUOT_STRING ;
 color: COLOR ;
 
 // data types for charts
@@ -94,12 +94,13 @@ named_value_colored: LT label=string COMMA value=number COMMA (color | identifie
 
 // json data type
 j_value
-: (j_object  | string | number | boolean | NULL)				#regularJValue
-| (SQ_L j_value (COMMA j_value)* SQ_R)							#arrayJValue
+: j_object																	#objectJValue
+| (string | number | boolean | NULL)										#regularJValue
+| (SQ_L j_value (COMMA j_value)* SQ_R)										#arrayJValue
+| EMPTY_ARRAY																#emptyArrayJValue
 ;
-j_member: IDENTIFIER SC j_value ;
-j_object: EMPTY_J_OBJECT | ( CURLY_L j_member CURLY_R ) ;
-j_string: J_STRING_MARKER (QUOT j_value QUOT) | (DQUOT j_value DQUOT) ;
+j_member: string COLON j_value ;
+j_object: EMPTY_J_OBJECT | ( CURLY_L j_member (COMMA j_member)* CURLY_R ) ;
 
 // functions
 id_list: (L R) | (L (IDENTIFIER COMMA)* IDENTIFIER R) ;
@@ -131,13 +132,14 @@ mul_div: MUL | DIV ;
 // TODO add array access by integer identifier
 identifier_ext
 :	identifier_ext DOT IDENTIFIER			#propertyAccess
+|	identifier_ext DOT string				#jsonAccess
 |	identifier_ext SQ_L NUMBER SQ_R			#arrayAccess
 | 	IDENTIFIER								#genericIdentifier
 ;
 l_value: COLOR_SIGN? identifier_ext ;
 r_value_list: (r_value COMMA)+ r_value ;
 r_value
-: (array | data_point | data_point_colored | named_value | named_value_colored | j_string | string | color)	#varRValue
+: (array | data_point | data_point_colored | named_value | named_value_colored | j_object | string | color)	#varRValue
 | (COLOR_SIGN? identifier_ext)																#identifierRValue
 | function_call																				#functionRValue
 | (logical_expression | math_expression)													#evalRValue

@@ -1,6 +1,6 @@
 import pytest
 
-from utils import gparse
+from utils import gparse, UnexpectedToken
 from visitor import types, exceptions
 
 
@@ -14,7 +14,7 @@ def test_number_assignment():
 
 
 def test_string_assignment():
-	v = gparse('a = "test"; b = \'test\'; c = "a4AFh8a9sf09;FAU()[]\'{}-=)()(!&@$";')
+	v = gparse('a = "test"; b = "test"; c = "a4AFh8a9sf09;FAU()[]\'{}-=)()(!&@$";')
 	v.variables.assert_variable('a', 'test', types.STRING)
 	v.variables.assert_variable('b', 'test', types.STRING)
 	v.variables.assert_variable('c', 'a4AFh8a9sf09;FAU()[]\'{}-=)()(!&@$', types.STRING)
@@ -93,3 +93,19 @@ def test_lists():
 	assert v.variables.variables['a'].value[3].value == 7
 	assert v.variables.variables['a'].value[3].type == types.NUMBER
 	v.variables.assert_variable('c', '#ff00ff', types.COLOR)
+	
+
+def test_json_strings():
+	gparse('a = {};')
+	v = gparse('a = {"a": 12}; b = a.\'a\'; a."a" = 3;')
+	assert v.variables.variables['a'].value['a'].value == 3
+	assert v.variables.variables['b'].value == 12
+	assert v.variables.variables['a'].value['a'].type == types.NUMBER
+	v = gparse('a = {"a": [0, 1, 2, "test"]};')
+	assert v.variables.variables['a'].value['a'].type == types.LIST
+	assert v.variables.variables['a'].value['a'].value[0].value == 0
+	assert v.variables.variables['a'].value['a'].value[0].type == types.NUMBER
+	assert v.variables.variables['a'].value['a'].value[3].value == 'test'
+	assert v.variables.variables['a'].value['a'].value[3].type == types.STRING
+	with pytest.raises(UnexpectedToken):
+		gparse('a = {test: 5};')
