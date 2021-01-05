@@ -85,11 +85,12 @@ class NamedValue:
 		return '<{}, {}, {}>'.format(self.label.value, self.value.value, self.color.value)
 
 
-def to_number_or_int(node: TerminalNodeImpl):
+def to_number_or_int(node: TerminalNodeImpl, raw_str=False):
+	text = node if raw_str else node.symbol.text
 	try:
-		return int(node.symbol.text)
+		return int(text)
 	except ValueError:
 		try:
-			return float(node.symbol.text)
+			return float(text)
 		except ValueError:
 			raise exceptions.ParsingException(node)

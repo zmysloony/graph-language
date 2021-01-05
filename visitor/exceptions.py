@@ -8,8 +8,8 @@ class ParsingException(Exception):
 			self.line = rule.symbol.line
 			self.column = rule.symbol.column
 		elif isinstance(rule, ParserRuleContext):
-			self.line = rule.start.line
-			self.column = rule.start.column
+			self.line = rule.stop.line
+			self.column = rule.stop.column
 
 		self.text = rule.getText()
 

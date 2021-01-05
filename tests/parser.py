@@ -31,17 +31,17 @@ def test_logical_expressions():
 	v.variables.assert_variable('a', True, types.BOOLEAN)
 
 
-# def test_math_expressions():
-# 	v = gparse('a = 12.1 + 0.909 + 11 - 2;')
-# 	v.variables.assert_variable('a', 22.009)
-# 	v = gparse('a = 121 / 11;')
-# 	v.variables.assert_variable('a', 11)
-# 	v = gparse('a = 121 / -11;')
-# 	v.variables.assert_variable('a', -11)
-# 	v = gparse('a = 123 / 15;')
-# 	v.variables.assert_variable('a', 8.2)
-# 	v = gparse('a = -5*(12-2)*0.21;')
-# 	v.variables.assert_variable('a', -10.5)
+def test_math_expressions():
+	v = gparse('a = 12.1 + 0.909 + 11 - 2;')
+	v.variables.assert_variable('a', 22.009)
+	v = gparse('a = 121 / 11;')
+	v.variables.assert_variable('a', 11)
+	v = gparse('a = 121 / -11;')
+	v.variables.assert_variable('a', -11)
+	v = gparse('a = 123 / 15;')
+	v.variables.assert_variable('a', 8.2)
+	v = gparse('a = -5*(12-2)*0.21;')
+	v.variables.assert_variable('a', -10.5)
 
 
 def test_color_assignment_with_new_variable():

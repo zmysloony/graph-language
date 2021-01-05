@@ -17,7 +17,7 @@ EMPTY_ARRAY: SQ_L SQ_R ;
 NULL: 'null' ;
 TRUE: 'true' ;
 FALSE: 'false' ;
-NUMBER: MINUS? (( DIGIT+ '.' DIGIT+ ) | INTEGER) ;
+NUMBER: ( DIGIT+ '.' DIGIT+ ) | INTEGER ;
 INTEGER: DIGIT+ ;
 STRING: '"' (CHAR | '\'' )+ '"' | '\'' (CHAR | '"')+ '\'' ;
 COLOR: '#' HEX_SYMBOL HEX_SYMBOL HEX_SYMBOL HEX_SYMBOL HEX_SYMBOL HEX_SYMBOL ;
@@ -81,7 +81,6 @@ array: EMPTY_ARRAY | (SQ_L (r_value_list | r_value) SQ_R) ;
 
 // basic data types
 string: STRING ;
-number: NUMBER ;
 color: COLOR ;
 
 // data types for charts
@@ -92,8 +91,8 @@ named_value_colored: LT label=string COMMA value=number COMMA (color | identifie
 
 // json data type
 j_value
-: (j_object  | string | number | boolean | NULL)		#regularJValue
-| (SQ_L j_value (COMMA j_value)* SQ_R)					#arrayJValue
+: (j_object  | string | number | boolean | NULL)				#regularJValue
+| (SQ_L j_value (COMMA j_value)* SQ_R)							#arrayJValue
 ;
 j_member: IDENTIFIER SC j_value ;
 j_object: EMPTY_J_OBJECT | ( CURLY_L j_member CURLY_R ) ;
@@ -113,13 +112,17 @@ if_cond: IF L logical_expression R segment ;
 
 
 // math
+number: math_expression ;
 math_expression
-:   L math_expression R												#group
-|   MINUS math_expression											#unaryMinus
-|   left=math_expression op=(MUL | DIV)  right=math_expression		#mulDiv
-|   left=math_expression op=(PLUS | MINUS) right=math_expression	#addSub
-|   (number | identifier_ext)                           			#element
+:   L math_expression R												#groupMExpression
+|	MINUS math_expression											#minusMExpression
+|   left=math_expression op=mul_div right=math_expression			#mulDivMExpression
+|   left=math_expression op=plus_minus right=math_expression		#addSubMExpression
+|   identifier_ext	        			                   			#identifierMExpression
+|	NUMBER															#numberMExpression
 ;
+plus_minus: PLUS | MINUS ;
+mul_div: MUL | DIV ;
 
 // r-value and l-value
 // TODO add array access by integer identifier
@@ -131,7 +134,7 @@ identifier_ext
 l_value: COLOR_SIGN? identifier_ext ;
 r_value_list: (r_value COMMA)+ r_value ;
 r_value
-: (array | data_point | data_point_colored | named_value | named_value_colored | j_string | string | number | color)	#varRValue
+: (array | data_point | data_point_colored | named_value | named_value_colored | j_string | string | color)	#varRValue
 | (COLOR_SIGN? identifier_ext)																#identifierRValue
 | function_call																				#functionRValue
 | (logical_expression | math_expression)													#evalRValue
@@ -139,6 +142,7 @@ r_value
 ;
 
 // logical
+// TODO bool like in number->math_expression and use it everywhere
 logical_expression
 : L logical_expression R											#parenLExpression
 | NOT logical_expression											#notLExpression
@@ -146,7 +150,7 @@ logical_expression
 | left=logical_expression op=binary right=logical_expression		#binaryLExpression
 | boolean															#boolLExpression
 | l_value															#identifierLExpression
-| number															#decimalLExpression
+| math_expression													#mathLExpression
 ;
 comparator: GT | GTE | LT | LTE | EQ | NEQ;
 binary: AND | OR ;

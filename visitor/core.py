@@ -103,10 +103,7 @@ class GVisitor(glangVisitor):
 		return Var(ctx.COLOR().getText(), types.COLOR)
 
 	def visitNumber(self, ctx:glangParser.NumberContext):
-		return Var(to_number_or_int(ctx.NUMBER()), types.NUMBER)
-
-	def visitDecimalLExpression(self, ctx:glangParser.DecimalLExpressionContext):
-		return ctx.getText()
+		return Var(eval(self.visit(ctx.math_expression())), types.NUMBER)
 
 	def visitIdentifierLExpression(self, ctx:glangParser.IdentifierLExpressionContext):
 		var = self.visitL_value(ctx.l_value(), False)
@@ -132,12 +129,49 @@ class GVisitor(glangVisitor):
 	def visitNotLExpression(self, ctx:glangParser.NotLExpressionContext):
 		return '~' + self.visit(ctx.logical_expression())
 
+	def visitMathLExpression(self, ctx:glangParser.MathLExpressionContext):
+		return str(eval(self.visit(ctx.math_expression())))
+
+	def visitNumberMExpression(self, ctx:glangParser.NumberMExpressionContext):
+		return ctx.NUMBER().getText()
+
+	def visitMinusMExpression(self, ctx:glangParser.MinusMExpressionContext):
+		return '-' + self.visit(ctx.math_expression())
+
+	def visitIdentifierMExpression(self, ctx:glangParser.IdentifierMExpressionContext):
+		var = self.visit(ctx.identifier_ext())
+		if var.type != types.NUMBER:
+			raise exceptions.IncorrectType(ctx.identifier_ext(), var.type, types.NUMBER)
+		return str(var.value)
+
+	def visitPlus_minus(self, ctx:glangParser.Plus_minusContext):
+		return ctx.getText()
+
+	def visitMul_div(self, ctx:glangParser.Mul_divContext):
+		return ctx.getText()
+
+	def visitAddSubMExpression(self, ctx:glangParser.AddSubMExpressionContext):
+		return '{}{}{}'.format(self.visit(ctx.left), self.visit(ctx.op), self.visit(ctx.right))
+
+	def visitMulDivMExpression(self, ctx:glangParser.MulDivMExpressionContext):
+		return '{}{}{}'.format(self.visit(ctx.left), self.visit(ctx.op), self.visit(ctx.right))
+
+	def visitGroupMExpression(self, ctx:glangParser.GroupMExpressionContext):
+		return '({})'.format(self.visit(ctx.math_expression()))
+
 	def visitNullRValue(self, ctx:glangParser.NullRValueContext):
 		return Var(None, None)
 
 	def visitEvalRValue(self, ctx:glangParser.EvalRValueContext):
-		expr = self.visit(ctx.logical_expression()) if ctx.logical_expression() else self.visit(ctx.math_expression())
-		expr_type = types.BOOLEAN if ctx.logical_expression() else types.NUMBER
+		if ctx.logical_expression():
+			children = ctx.logical_expression().children
+			if len(children) == 1 and isinstance(children[0], glangParser.Math_expressionContext):
+				return Var(to_number_or_int(self.visit(ctx.logical_expression()), True), types.NUMBER)
+			expr = self.visit(ctx.logical_expression())
+			expr_type = types.BOOLEAN
+		else:
+			expr = self.visit(ctx.math_expression())
+			expr_type = types.NUMBER
 		return Var(eval(expr), expr_type)
 
 	def visitFunctionRValue(self, ctx:glangParser.FunctionRValueContext):
