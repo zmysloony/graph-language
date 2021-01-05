@@ -77,7 +77,10 @@ WS: [ \r\n\t] + -> skip ;
 // ************************   parser rules    **********************************
 // *****************************************************************************
 script: (function | sequential_code)* ;
-array: EMPTY_ARRAY | (SQ_L (r_value_list | r_value) SQ_R) ;
+array
+: EMPTY_ARRAY	#emptyArray
+| (SQ_L (r_value_list | r_value) SQ_R) #filledArray
+;
 
 // basic data types
 string: STRING ;
@@ -143,6 +146,7 @@ r_value
 
 // logical
 // TODO bool like in number->math_expression and use it everywhere
+
 logical_expression
 : L logical_expression R											#parenLExpression
 | NOT logical_expression											#notLExpression

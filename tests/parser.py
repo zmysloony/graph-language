@@ -70,3 +70,26 @@ def test_correct_color_assignment():
 	assert v.variables.variables['b'].value.color.value == '#00ff00'
 	assert v.variables.variables['b'].value.color.type == types.COLOR
 
+
+def test_property_access():
+	with pytest.raises(exceptions.AttributeNotDefined):
+		gparse('a = 12; b = a.color;')
+	v = gparse('a = <1,-1,#ff0000>; b = a.color;')
+	v.variables.assert_variable('b', '#ff0000', types.COLOR)
+
+
+def test_lists():
+	v = gparse('b = 7; a = [<1,-1,#ff00ff>, 15, "test", b]; c = a[0].color;')
+	assert v.variables.variables['a'].type == types.LIST
+	assert v.variables.variables['a'].value[0].type == types.DATA_POINT
+	assert v.variables.variables['a'].value[0].value.x.value == 1
+	assert v.variables.variables['a'].value[0].value.x.type == types.NUMBER
+	assert v.variables.variables['a'].value[0].value.y.value == -1
+	assert v.variables.variables['a'].value[0].value.y.type == types.NUMBER
+	assert v.variables.variables['a'].value[1].value == 15
+	assert v.variables.variables['a'].value[1].type == types.NUMBER
+	assert v.variables.variables['a'].value[2].value == 'test'
+	assert v.variables.variables['a'].value[2].type == types.STRING
+	assert v.variables.variables['a'].value[3].value == 7
+	assert v.variables.variables['a'].value[3].type == types.NUMBER
+	v.variables.assert_variable('c', '#ff00ff', types.COLOR)

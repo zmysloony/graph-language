@@ -1,6 +1,8 @@
+import sys
+
 import antlr4
 from antlr4 import InputStream
-from antlr4.error.ErrorListener import ErrorListener
+from antlr4.error.ErrorListener import ErrorListener, ConsoleErrorListener
 
 from gen.glangLexer import glangLexer
 from gen.glangParser import glangParser
@@ -36,6 +38,8 @@ def gparse(text, return_visitor=True):
 	lexer = glex(text, return_lexer=True)
 	stream = antlr4.CommonTokenStream(lexer)
 	parser = glangParser(stream)
+	parser.removeErrorListeners()
+	parser.addErrorListener(ParserErrorListener())
 	tree = parser.script()
 	visitor = GVisitor()
 	visitor.visit(tree)
@@ -43,15 +47,25 @@ def gparse(text, return_visitor=True):
 		return visitor
 
 
+class ParserErrorListener(ConsoleErrorListener):
+	INSTANCE = None
+	def syntaxError(self, recognizer, offendingSymbol, line, column, msg, e):
+		raise ParserSyntaxException(line, column, msg)
+
+
 class LexerSyntaxException(Exception):
-	def __init__(self, offending, line, column, msg):
-		self.offending = offending
+	def __init__(self, line, column, msg):
 		self.line = line
 		self.column = column
 		self.msg = msg
 
 	def __str__(self):
-		return '({}, {}): {}'.format(self.line, self.column, self.msg)
+		return 'Lexer error ({}, {}): {}'.format(self.line, self.column, self.msg)
+
+
+class ParserSyntaxException(LexerSyntaxException):
+	def __str__(self):
+		return 'Parser error ({}, {}): {}'.format(self.line, self.column, self.msg)
 
 
 class LexerErrorListener(ErrorListener):
@@ -59,7 +73,7 @@ class LexerErrorListener(ErrorListener):
 		super(LexerErrorListener, self).__init__()
 
 	def syntaxError(self, recognizer, offendingSymbol, line, column, msg, e):
-		raise LexerSyntaxException(offendingSymbol, line, column, msg)
+		raise LexerSyntaxException(line, column, msg)
 
 	def reportAmbiguity(self, recognizer, dfa, startIndex, stopIndex, exact, ambigAlts, configs):
 		raise Exception("Oh no!!")

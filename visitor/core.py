@@ -35,7 +35,7 @@ class GVisitor(glangVisitor):
 
 	def visitPropertyAccess(self, ctx:glangParser.PropertyAccessContext):
 		try:
-			return getattr(self.visit(ctx.identifier_ext()), ctx.IDENTIFIER())
+			return getattr(self.visit(ctx.identifier_ext()).value, ctx.IDENTIFIER().symbol.text)
 		except AttributeError:
 			raise exceptions.AttributeNotDefined(ctx.identifier_ext(), ctx.IDENTIFIER())
 
@@ -180,9 +180,24 @@ class GVisitor(glangVisitor):
 
 	def visitIdentifierRValue(self, ctx:glangParser.IdentifierRValueContext):
 		var = self.visit(ctx.identifier_ext())
-		if var.type != types.COLOR:
-			raise exceptions.IncorrectType(ctx.identifier_ext(), var.type, types.COLOR)
+		if ctx.COLOR_SIGN():
+			if var.type not in [types.DATA_POINT, types.NAMED_VALUE]:
+				raise exceptions.IncorrectType(ctx.identifier_ext(), var.type, [types.DATA_POINT, types.NAMED_VALUE])
+			return var.value.color
+		else:
+			return var
 
-	def visitVarRValue(self, ctx:glangParser.VarRValueContext):
-		z = self.visit(ctx.getChild(0))
-		return z
+	def visitR_value_list(self, ctx:glangParser.R_value_listContext):
+		array = []
+		for r_val in ctx.r_value():
+			array.append(self.visit(r_val))
+		return array
+
+	def visitEmptyArray(self, ctx:glangParser.EmptyArrayContext):
+		return Var([], types.LIST)
+
+	def visitFilledArray(self, ctx:glangParser.FilledArrayContext):
+		if ctx.r_value():
+			return Var([self.visit(ctx.r_value())], types.LIST)
+		else:
+			return Var(self.visit(ctx.r_value_list()), types.LIST)
