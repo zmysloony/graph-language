@@ -11,7 +11,6 @@ FOR: 'for' ;
 
 
 // primitive data types
-EMPTY_J_OBJECT: CURLY_L CURLY_R ;
 EMPTY_ARRAY: SQ_L SQ_R ;
 NULL: 'null' ;
 TRUE: 'true' ;
@@ -100,11 +99,11 @@ j_value
 | EMPTY_ARRAY																#emptyArrayJValue
 ;
 j_member: string COLON j_value ;
-j_object: EMPTY_J_OBJECT | ( CURLY_L j_member (COMMA j_member)* CURLY_R ) ;
+j_object: ( CURLY_L (j_member (COMMA j_member)*)? CURLY_R ) ;
 
 // functions
 id_list: (L R) | (L (IDENTIFIER COMMA)* IDENTIFIER R) ;
-arg_list: (L R) | (L (r_value | r_value_list) R) ;
+arg_list: (L R) | (L r_value (COMMA r_value)* R) ;
 function: DEF IDENTIFIER id_list segment ;
 function_call: IDENTIFIER arg_list ;
 
@@ -137,7 +136,7 @@ identifier_ext
 | 	IDENTIFIER								#genericIdentifier
 ;
 l_value: COLOR_SIGN? identifier_ext ;
-r_value_list: (r_value COMMA)+ r_value ;
+r_value_list: (r_value COMMA)+ r_value ; // TODO get rid of r_value_list
 r_value
 : (array | data_point | data_point_colored | named_value | named_value_colored | j_object | string | color)	#varRValue
 | (COLOR_SIGN? identifier_ext)																#identifierRValue
@@ -166,7 +165,7 @@ boolean: TRUE | FALSE ;
 assignment: l_value ASSIGNMENT r_value ;
 inplace_math_op: l_value op=(MINUS_EQ | PLUS_EQ | DIV_EQ | MUL_EQ) r_value ;
 return_statement: RETURN r_value ;
-operation: assignment | function_call | return_statement | inplace_math_op;
-line_operation: operation SC ;
+operation: assignment | function_call | inplace_math_op;
+line_operation: (operation SC) | (return_statement SC);
 sequential_code: (line_operation | for_loop | if_cond)+ ;
 segment: CURLY_L sequential_code? CURLY_R ;

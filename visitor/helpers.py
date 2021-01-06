@@ -6,6 +6,21 @@ from antlr4.tree.Tree import TerminalNodeImpl
 from visitor import exceptions, types
 
 
+class Function:
+	def __init__(self, arg_names, segment):
+		self.arg_names = arg_names
+		self.segment = segment
+
+	def check_args(self, rule, args):
+		if len(self.arg_names) != len(args):
+			raise exceptions.WrongArgumentCount(rule, len(args), len(self.arg_names))
+
+	def create_var_tree(self, ctx, args):
+		tree = VarTree(ctx)
+		tree.copy_into(zip(self.arg_names, args))
+		return tree
+
+
 class Var:
 	def __init__(self, value, value_type):
 		self.value = value
@@ -61,6 +76,10 @@ class VarTree:
 		node.variables[identifier.symbol.text] = Var(value, value_type)
 		return node.variables[identifier.symbol.text]
 
+	def copy_into(self, variables):
+		for var_name, var in variables:
+			self.variables[var_name] = Var(var.value, var.type)
+
 	def assert_variable(self, identifier, value=None, value_type=None):
 		var = self.get(identifier, raw_text_identifier=True)
 		if value is not None:
@@ -94,3 +113,8 @@ def to_number_or_int(node: TerminalNodeImpl, raw_str=False):
 			return float(text)
 		except ValueError:
 			raise exceptions.ParsingException(node)
+
+
+class ReturnException(Exception):
+	def __init__(self, value):
+		self.value = value

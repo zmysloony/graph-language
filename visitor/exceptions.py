@@ -101,3 +101,18 @@ class IllegalOperator(ParsingException):
 
 	def error_msg(self):
 		return 'Illegal operation \'{}\' on variable \'{}\'({}).'.format(self.operator, self.name, self.type)
+
+
+class DuplicateIdentifier(ParsingException):
+	def error_msg(self):
+		return 'Duplicate identifier \'{}\' in a function definition.'.format(self.name)
+
+
+class WrongArgumentCount(ParsingException):
+	def __init__(self, rule, count, expected_count):
+		super().__init__(rule)
+		self.count = count
+		self.expected = expected_count
+
+	def error_msg(self):
+		return 'Function \'{}\' expects {} arguments, {} given.'.format(self.name, self.expected, self.count)

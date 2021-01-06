@@ -1,17 +1,18 @@
-import collections
-
+import typing
 from antlr4 import ParserRuleContext
 
 from gen.glangParser import glangParser
 from gen.glangVisitor import glangVisitor
 from visitor import helpers, types, exceptions
-from visitor.helpers import VarTree, to_number_or_int, Var
+from visitor.helpers import VarTree, to_number_or_int, Var, Function, ReturnException
 
 
 class GVisitor(glangVisitor):
 	def __init__(self):
 		super(glangVisitor, self).__init__()
+		self.stack: typing.List[VarTree] = []
 		self.variables: VarTree = VarTree(ParserRuleContext())
+		self.functions: typing.Dict[str, Function] = {}
 
 	def enter_context(self, context: ParserRuleContext):
 		self.variables = self.variables.enter(context)
@@ -21,11 +22,10 @@ class GVisitor(glangVisitor):
 
 	def visitScript(self, ctx:glangParser.ScriptContext):
 		self.variables = VarTree(ctx)
-		self.visitChildren(ctx)
-
-	def visitFunction(self, ctx:glangParser.FunctionContext):
-		#TODO
-		pass
+		for func in ctx.function():
+			self.visitFunction(func)
+		for seq in ctx.sequential_code():
+			self.visitSequential_code(seq)
 
 	def visitGenericIdentifier(self, ctx:glangParser.GenericIdentifierContext, create=False):
 		if create:
@@ -184,10 +184,6 @@ class GVisitor(glangVisitor):
 			expr_type = types.NUMBER
 		return Var(eval(expr), expr_type)
 
-	def visitFunctionRValue(self, ctx:glangParser.FunctionRValueContext):
-		# TODO
-		pass
-
 	def visitIdentifierRValue(self, ctx:glangParser.IdentifierRValueContext):
 		var = self.visit(ctx.identifier_ext())
 		if ctx.COLOR_SIGN():
@@ -290,3 +286,38 @@ class GVisitor(glangVisitor):
 			if ctx.after:
 				self.visit(ctx.after)
 		self.exit_context()
+
+	def visitId_list(self, ctx:glangParser.Id_listContext):
+		identifiers = []
+		for i in ctx.IDENTIFIER():
+			name = i.getText()
+			if name in identifiers:
+				raise exceptions.DuplicateIdentifier(i)
+			identifiers.append(name)
+		return identifiers
+
+	def visitFunction(self, ctx:glangParser.FunctionContext):
+		identifiers = self.visit(ctx.id_list())
+		self.functions[ctx.IDENTIFIER().getText()] = Function(identifiers, ctx.segment())
+
+	def visitArg_list(self, ctx:glangParser.Arg_listContext):
+		args = []
+		for rval in ctx.r_value():
+			args.append(self.visit(rval))
+		return args
+
+	def visitReturn_statement(self, ctx:glangParser.Return_statementContext):
+		raise ReturnException(self.visit(ctx.r_value()))
+
+	def visitFunction_call(self, ctx:glangParser.Function_callContext):
+		func = self.functions[ctx.IDENTIFIER().getText()]
+		args = self.visit(ctx.arg_list())
+		func.check_args(ctx.IDENTIFIER(), args)
+		self.stack.append(self.variables)
+		self.variables = func.create_var_tree(ctx, args)
+		try:
+			self.visitSegment(func.segment, new_context=False)
+			self.variables = self.stack.pop()
+		except ReturnException as e:
+			self.variables = self.stack.pop()
+			return e.value

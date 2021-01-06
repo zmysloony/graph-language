@@ -1,6 +1,6 @@
 import pytest
 
-from utils import gparse, UnexpectedToken
+from utils import gparse, UnexpectedToken, ParserSyntaxException
 from visitor import types, exceptions
 
 
@@ -150,3 +150,25 @@ def test_for_loop():
 			assert v.variables.variables['a'].value[i*3+j].value.y.value == -j
 	with pytest.raises(exceptions.IdentifierNotDefined):
 		gparse('a = 2; for(i=0; i<3; i+=1) { a *= a+i; } a = i;')
+
+
+def test_function_definitions():
+	# empty function
+	v = gparse('def func(){}')
+	assert v.functions['func'].arg_names == []
+
+	# redefinition
+	v = gparse('def func(){} def func(a,b,c){}')
+	assert v.functions['func'].arg_names == ['a', 'b', 'c']
+
+	# function inside a function - incorrect
+	with pytest.raises(ParserSyntaxException):
+		gparse('def func(){ def other(){} }')
+
+
+def test_function_calls():
+	v = gparse('a = func(1,2,3); def func(a,b,c){return a+b+c;}')
+	v.variables.assert_variable('a', 6)
+	v = gparse('a = <-1,1,#ff0000>; func(a); def func(dataPoint){dataPoint.x=dataPoint.y; dataPoint.color=#0000ff;}')
+	assert v.variables.variables['a'].value.x.value == 1
+	assert v.variables.variables['a'].value.color.value == '#0000ff'

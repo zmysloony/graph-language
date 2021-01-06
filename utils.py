@@ -79,6 +79,9 @@ class UnexpectedToken(ParserSyntaxException):
 		expected_tokens = expected_tokens.split(', ')
 		literal_expected_tokens = []
 		for t in expected_tokens:
+			if t[0] == t[-1] == '\'':
+				literal_expected_tokens.append(t[1:-1])
+				continue
 			name = recognizer.literalNames[getattr(recognizer, t)]
 			if name != '<INVALID>':
 				literal_expected_tokens.append(name)
