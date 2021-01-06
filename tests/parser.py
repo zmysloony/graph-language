@@ -134,3 +134,19 @@ def test_if_conditional():
 	v.variables.assert_variable('a', 10)
 	with pytest.raises(exceptions.IdentifierNotDefined):
 		gparse('a = 2; if(a==2){a += 3; b = 5;} a += b;')
+
+
+def test_for_loop():
+	v = gparse('a = -2; for(a=4; a<=4; a+=1) { a = 7; }')
+	v.variables.assert_variable('a', 8)
+	v = gparse('a = 2; for(i=0; i<3; i+=1) { a *= a+i; }')
+	v.variables.assert_variable('a', 2*2*(2*2+1)*(2*2*(2*2+1)+2))
+	v = gparse('a = []; for(i=0; i<3; i+=1) { for(j=0; j>-3; j-=1) { a += <i, j, #ff0000>; } }')
+	assert v.variables.variables['a'].type == types.LIST
+	for i in range(3):
+		for j in range(-3):
+			assert v.variables.variables['a'].value[i*3+j].type == types.DATA_POINT
+			assert v.variables.variables['a'].value[i*3+j].value.x.value == i
+			assert v.variables.variables['a'].value[i*3+j].value.y.value == -j
+	with pytest.raises(exceptions.IdentifierNotDefined):
+		gparse('a = 2; for(i=0; i<3; i+=1) { a *= a+i; } a = i;')

@@ -109,7 +109,7 @@ function: DEF IDENTIFIER id_list segment ;
 function_call: IDENTIFIER arg_list ;
 
 // loops
-for_loop: FOR L operation? SC logical_expression SC operation? R segment ;
+for_loop: FOR L before=operation? SC logical_expression SC after=operation? R segment ;
 
 // conditionals
 if_cond: IF L logical_expression R segment ;

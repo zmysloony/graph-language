@@ -270,11 +270,23 @@ class GVisitor(glangVisitor):
 			raise illegal_operator()
 		raise illegal_operator()
 
-	def visitSegment(self, ctx:glangParser.SegmentContext):
-		self.enter_context(ctx)
+	def visitSegment(self, ctx:glangParser.SegmentContext, new_context=True):
+		if new_context:
+			self.enter_context(ctx)
 		self.visit(ctx.sequential_code())
-		self.exit_context()
+		if new_context:
+			self.exit_context()
 
 	def visitIf_cond(self, ctx:glangParser.If_condContext):
 		if eval(self.visit(ctx.logical_expression())):
 			self.visit(ctx.segment())
+
+	def visitFor_loop(self, ctx:glangParser.For_loopContext):
+		self.enter_context(ctx)
+		if ctx.before:
+			self.visit(ctx.before)
+		while eval(self.visit(ctx.logical_expression())):
+			self.visitSegment(ctx.segment(), new_context=False)
+			if ctx.after:
+				self.visit(ctx.after)
+		self.exit_context()
