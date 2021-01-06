@@ -241,3 +241,31 @@ class GVisitor(glangVisitor):
 				raise exceptions.AmbigiousJsonMember(member, member_calculated[0])
 			attributes[member_calculated[0]] = member_calculated[1]
 		return Var(attributes, types.J_OBJECT)
+
+	def visitInplace_math_op(self, ctx:glangParser.Inplace_math_opContext):
+		left = self.visit(ctx.l_value())
+
+		def illegal_operator():
+			return exceptions.IllegalOperator(ctx.l_value(), left.type, ctx.op)
+
+		if left.type == types.LIST:
+			if ctx.PLUS_EQ():
+				right = self.visit(ctx.r_value())
+				left.value.append(right)
+				return
+			raise illegal_operator()
+		if left.type == types.NUMBER:
+			right = self.visit(ctx.r_value())
+			if right.type == types.NUMBER:
+				left.value = eval('{}{}{}'.format(left.value, ctx.op.text[0], right.value))
+				return
+			raise illegal_operator()
+		if left.type == types.STRING:
+			if ctx.PLUS_EQ():
+				right = self.visit(ctx.r_value())
+				if right.type == types.STRING:
+					left.value += right.value
+					return
+				raise exceptions.IncorrectType(ctx.r_value(), right.type, types.STRING)
+			raise illegal_operator()
+		raise illegal_operator()

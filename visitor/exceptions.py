@@ -37,7 +37,7 @@ class IncorrectType(ParsingException):
 
 	def actual_str(self):
 		if self.actual:
-			return ' (\'{}\')'.format(self.actual)
+			return ' ({})'.format(self.actual)
 		else:
 			return ''
 
@@ -49,7 +49,7 @@ class IncorrectType(ParsingException):
 					expected_str += ' or \'{}\''.format(item)
 			else:
 				expected_str = self.expected
-			return ', expected to have type \'{}\''.format(expected_str)
+			return ', expected to have type ({})'.format(expected_str)
 
 	def error_msg(self):
 		return 'Identifier \'{}\' is of incorrect type{}{}.'.format(self.name, self.actual_str(), self.expected_str())
@@ -91,3 +91,13 @@ class JsonAccessOnNonJsonVariable(ParsingException):
 class IncorrectJsonMemberName(ParsingException):
 	def error_msg(self):
 		return 'Illegal JSON object member name \'{}\''.format(self.name)
+
+
+class IllegalOperator(ParsingException):
+	def __init__(self, rule, var_type, operator):
+		super().__init__(rule)
+		self.type = var_type
+		self.operator = operator.text
+
+	def error_msg(self):
+		return 'Illegal operation \'{}\' on variable \'{}\'({}).'.format(self.operator, self.name, self.type)

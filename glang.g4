@@ -27,7 +27,7 @@ IDENTIFIER: (LETTER | '_') (LETTER | DIGIT | '_')* ;
 // operators
 PLUS_EQ: '+=' ;
 PLUS: '+' ;
-MINUS_EQ: '--' ;
+MINUS_EQ: '-=' ;
 MINUS: '-' ;
 DIV_EQ: '/=' ;
 DIV: '/' ;

@@ -109,3 +109,19 @@ def test_json_strings():
 	assert v.variables.variables['a'].value['a'].value[3].type == types.STRING
 	with pytest.raises(UnexpectedToken):
 		gparse('a = {test: 5};')
+
+
+def test_inplace_operators():
+	v = gparse('a = 2; a += 2; a -= 3; a *= 4; a /= 0.5; b = "test"; b += "ing"; c = []; c += b; c += a + 2;')
+	v.variables.assert_variable('a', 8, types.NUMBER)
+	v.variables.assert_variable('b', 'testing', types.STRING)
+	assert v.variables.variables['c'].value[0].value == 'testing'
+	assert v.variables.variables['c'].value[0].type == types.STRING
+	assert v.variables.variables['c'].value[1].value == 10
+	assert v.variables.variables['c'].value[1].type == types.NUMBER
+	with pytest.raises(exceptions.IncorrectType):
+		gparse('a = ""; a += 2;')
+	with pytest.raises(exceptions.IllegalOperator):
+		gparse('a = {}; a += 2;')
+	with pytest.raises(exceptions.IllegalOperator):
+		gparse('a = "test"; a -= "est";')
