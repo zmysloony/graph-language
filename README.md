@@ -14,8 +14,8 @@ Their type can be changed at any moment.
 
 Boolean (logical) expressions use symbols `|` (OR) and `&` (AND).
 ### Functions
-Functions can be defined anywhere, although they can be defined **only once**.
-Functions can be called only if they were defined earlier in the code.
+Functions can be defined only at the top level of user's code.
+Functions can be called even if they are defined later in the code.
 It is impossible to access variables outside function's own scope.
 
 Example function definition:

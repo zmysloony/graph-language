@@ -269,3 +269,12 @@ class GVisitor(glangVisitor):
 				raise exceptions.IncorrectType(ctx.r_value(), right.type, types.STRING)
 			raise illegal_operator()
 		raise illegal_operator()
+
+	def visitSegment(self, ctx:glangParser.SegmentContext):
+		self.enter_context(ctx)
+		self.visit(ctx.sequential_code())
+		self.exit_context()
+
+	def visitIf_cond(self, ctx:glangParser.If_condContext):
+		if eval(self.visit(ctx.logical_expression())):
+			self.visit(ctx.segment())

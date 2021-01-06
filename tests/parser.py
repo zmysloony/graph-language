@@ -125,3 +125,12 @@ def test_inplace_operators():
 		gparse('a = {}; a += 2;')
 	with pytest.raises(exceptions.IllegalOperator):
 		gparse('a = "test"; a -= "est";')
+
+
+def test_if_conditional():
+	v = gparse('a = 2; if(1==2){a += 3;}')
+	v.variables.assert_variable('a', 2)
+	v = gparse('a = 2; if(a==2){a += 3; b = 5; a += b;}')
+	v.variables.assert_variable('a', 10)
+	with pytest.raises(exceptions.IdentifierNotDefined):
+		gparse('a = 2; if(a==2){a += 3; b = 5;} a += b;')
