@@ -3,7 +3,7 @@ import typing
 from antlr4 import ParserRuleContext
 from antlr4.tree.Tree import TerminalNodeImpl
 
-from visitor import exceptions, types
+from src.visitor import exceptions, types
 
 
 class Function:

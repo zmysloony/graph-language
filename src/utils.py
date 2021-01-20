@@ -4,9 +4,9 @@ import antlr4
 from antlr4 import InputStream
 from antlr4.error.ErrorListener import ErrorListener, ConsoleErrorListener
 
-from gen.glangLexer import glangLexer
-from gen.glangParser import glangParser
-from visitor.core import GVisitor
+from generated.glangLexer import glangLexer
+from generated.glangParser import glangParser
+from src.visitor.core import GVisitor
 
 
 def assert_tokens(tokens, types):

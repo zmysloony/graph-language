@@ -1,10 +1,10 @@
 import typing
 from antlr4 import ParserRuleContext
 
-from gen.glangParser import glangParser
-from gen.glangVisitor import glangVisitor
-from visitor import helpers, types, exceptions
-from visitor.helpers import VarTree, to_number_or_int, Var, Function, ReturnException
+from generated.glangParser import glangParser
+from generated.glangVisitor import glangVisitor
+from src.visitor import helpers, types, exceptions
+from src.visitor.helpers import VarTree, to_number_or_int, Var, Function, ReturnException
 
 
 class GVisitor(glangVisitor):

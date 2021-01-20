@@ -1,7 +1,7 @@
 import pytest
 
-from utils import gparse, UnexpectedToken, ParserSyntaxException
-from visitor import types, exceptions
+from src.utils import gparse, UnexpectedToken, ParserSyntaxException
+from . import types, exceptions
 
 
 def test_number_assignment():
@@ -25,6 +25,10 @@ def test_logical_expressions():
 	v.variables.assert_variable('a', False, types.BOOLEAN)
 	v = gparse('a = 125 > false;')
 	v.variables.assert_variable('a', True, types.BOOLEAN)
+	v = gparse('a = 125 > 90; b = 90 > 125; c = 125 > 90 & 90 > 125;')
+	v.variables.assert_variable('a', True)
+	v.variables.assert_variable('b', False)
+	v.variables.assert_variable('c', False)
 	v = gparse('a = 125 > 90 & 90 > 125 | !(125 > 90 & 90 > 125);')
 	v.variables.assert_variable('a', True, types.BOOLEAN)
 	v = gparse('a = (1 == true) & (0 == false) & (1 != 0) & (1 >= true) & (1 <= true);')
@@ -32,6 +36,11 @@ def test_logical_expressions():
 
 
 def test_math_expressions():
+	v = gparse('a = 1+1; b = 2-2; c = 3*3; d = 4/4;')
+	v.variables.assert_variable('a', 2)
+	v.variables.assert_variable('b', 0)
+	v.variables.assert_variable('c', 9)
+	v.variables.assert_variable('d', 1)
 	v = gparse('a = 12.1 + 0.909 + 11 - 2;')
 	v.variables.assert_variable('a', 22.009)
 	v = gparse('a = 121 / 11;')
