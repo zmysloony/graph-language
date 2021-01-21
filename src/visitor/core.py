@@ -5,16 +5,9 @@ from antlr4 import ParserRuleContext
 
 from generated.glangParser import glangParser
 from generated.glangVisitor import glangVisitor
-from src.grapher import builtins as blns
+from src.grapher import builtins
 from src.visitor import helpers, types, exceptions
 from src.visitor.helpers import VarTree, to_number_or_int, Var, Function, ReturnException
-
-
-def get_builtins():
-	f = {}
-	for func in getmembers(blns, isfunction):
-		f[func[0]] = func[1]
-	return f
 
 
 class GVisitor(glangVisitor):
@@ -22,7 +15,7 @@ class GVisitor(glangVisitor):
 		super(glangVisitor, self).__init__()
 		self.stack: typing.List[VarTree] = []
 		self.variables: VarTree = VarTree(ParserRuleContext())
-		self.builtins: typing.Dict = get_builtins()
+		self.builtins: typing.Dict = builtins.FUNCTIONS
 		self.functions: typing.Dict[str, Function] = {}
 
 	def enter_context(self, context: ParserRuleContext):
@@ -340,8 +333,8 @@ class GVisitor(glangVisitor):
 			if func:
 				# check param count (kwargs and default values not allowed)
 				sig = signature(func)
-				if len(sig.parameters) == len(args):
-					return func(*args)
+				if len(sig.parameters) - 1 == len(args):
+					return func(ctx.IDENTIFIER(), *args)
 				else:
-					raise exceptions.WrongArgumentCount(ctx.IDENTIFIER(), len(args), len(sig.parameters))
+					raise exceptions.WrongArgumentCount(ctx.IDENTIFIER(), len(args), len(sig.parameters)-1)
 		raise exceptions.FunctionNotDefined(ctx.IDENTIFIER())

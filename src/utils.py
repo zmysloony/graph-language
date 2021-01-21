@@ -1,13 +1,17 @@
-import os
 import re
 
-import antlr4
-from antlr4 import InputStream
 from antlr4.error.ErrorListener import ErrorListener, ConsoleErrorListener
 
 from generated.glangLexer import glangLexer
-from generated.glangParser import glangParser
-from src.visitor.core import GVisitor
+
+
+def number_th(number):
+	n = number % 10
+	ths = {1: 'st', 2: 'nd', 3: 'rd'}
+	chosen = ths.get(n)
+	if chosen:
+		return '{}-{}'.format(number, chosen)
+	return '{}-th'.format(number)
 
 
 def assert_tokens(tokens, types):
@@ -24,29 +28,6 @@ def assert_tokens(tokens, types):
 def print_tokens(tokens):
 	for token in tokens:
 		print('{}: "{}"'.format(glangLexer.symbolicNames[token.type], token.text))
-
-
-def glex(text, return_lexer=False):
-	lexer = glangLexer(InputStream(text))
-	lexer.removeErrorListeners()
-	lexer._listeners = [LexerErrorListener()]
-	if return_lexer:
-		return lexer
-	return lexer.getAllTokens()
-
-
-def gparse(text, return_visitor=True):
-	lexer = glex(text, return_lexer=True)
-	# print_tokens(lexer.getAllTokens())
-	stream = antlr4.CommonTokenStream(lexer)
-	parser = glangParser(stream)
-	parser.removeErrorListeners()
-	parser.addErrorListener(ParserErrorListener())
-	tree = parser.script()
-	visitor = GVisitor()
-	visitor.visit(tree)
-	if return_visitor:
-		return visitor
 
 
 class ParserErrorListener(ConsoleErrorListener):

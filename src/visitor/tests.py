@@ -1,6 +1,7 @@
 import pytest
 
-from src.utils import gparse, UnexpectedToken, ParserSyntaxException
+from src.utils import UnexpectedToken, ParserSyntaxException
+from ..tools import gparse
 from . import types, exceptions
 
 
@@ -102,7 +103,7 @@ def test_lists():
 	assert v.variables.variables['a'].value[3].value == 7
 	assert v.variables.variables['a'].value[3].type == types.NUMBER
 	v.variables.assert_variable('c', '#ff00ff', types.COLOR)
-	
+
 
 def test_json_strings():
 	gparse('a = {};')
@@ -186,4 +187,5 @@ def test_function_calls():
 
 
 def test_builtins():
-	gparse('bar(); pie(); render();')
+	# gparse('z = []; bar(z, ""); pie(z, ""); render(z, "");')
+	gparse('bar([<"test", 15, #ff0000>], "name");')
