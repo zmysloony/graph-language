@@ -1,6 +1,7 @@
 import argparse
 import os
 
+from sys import exit
 from src.grapher import builtins
 from src.tools import gparse
 
@@ -16,5 +17,6 @@ if __name__ == '__main__':
 		except IOError:
 			print('Input file not accessible.')
 			exit(1)
-		builtins.RESULT_DIR = os.path.dirname(args.infile)
+		if args.outdir:
+			builtins.RESULT_DIR = os.path.dirname(args.outdir)
 		gparse(file.read())

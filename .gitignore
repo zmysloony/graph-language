@@ -5,3 +5,6 @@ __pycache__
 gen/glang*
 src/grapher/css/*.css
 .idea/watcherTasks.xml
+/build
+/dist
+/*.spec
