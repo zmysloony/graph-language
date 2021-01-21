@@ -116,3 +116,8 @@ class WrongArgumentCount(ParsingException):
 
 	def error_msg(self):
 		return 'Function \'{}\' expects {} arguments, {} given.'.format(self.name, self.expected, self.count)
+
+
+class FunctionNotDefined(ParsingException):
+	def error_msg(self):
+		return 'Function \'{}\' not defined.'.format(self.name)

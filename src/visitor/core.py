@@ -1,10 +1,20 @@
 import typing
+from inspect import signature, getmembers, isfunction
+
 from antlr4 import ParserRuleContext
 
 from generated.glangParser import glangParser
 from generated.glangVisitor import glangVisitor
+from src.grapher import builtins as blns
 from src.visitor import helpers, types, exceptions
 from src.visitor.helpers import VarTree, to_number_or_int, Var, Function, ReturnException
+
+
+def get_builtins():
+	f = {}
+	for func in getmembers(blns, isfunction):
+		f[func[0]] = func[1]
+	return f
 
 
 class GVisitor(glangVisitor):
@@ -12,6 +22,7 @@ class GVisitor(glangVisitor):
 		super(glangVisitor, self).__init__()
 		self.stack: typing.List[VarTree] = []
 		self.variables: VarTree = VarTree(ParserRuleContext())
+		self.builtins: typing.Dict = get_builtins()
 		self.functions: typing.Dict[str, Function] = {}
 
 	def enter_context(self, context: ParserRuleContext):
@@ -310,14 +321,27 @@ class GVisitor(glangVisitor):
 		raise ReturnException(self.visit(ctx.r_value()))
 
 	def visitFunction_call(self, ctx:glangParser.Function_callContext):
-		func = self.functions[ctx.IDENTIFIER().getText()]
+		name = ctx.IDENTIFIER().getText()
+		func = self.functions.get(name)
 		args = self.visit(ctx.arg_list())
-		func.check_args(ctx.IDENTIFIER(), args)
-		self.stack.append(self.variables)
-		self.variables = func.create_var_tree(ctx, args)
-		try:
-			self.visitSegment(func.segment, new_context=False)
-			self.variables = self.stack.pop()
-		except ReturnException as e:
-			self.variables = self.stack.pop()
-			return e.value
+		if func:
+			func.check_args(ctx.IDENTIFIER(), args)
+			self.stack.append(self.variables)
+			self.variables = func.create_var_tree(ctx, args)
+			try:
+				self.visitSegment(func.segment, new_context=False)
+				self.variables = self.stack.pop()
+				return
+			except ReturnException as e:
+				self.variables = self.stack.pop()
+				return e.value
+		else:
+			func = self.builtins.get(name)
+			if func:
+				# check param count (kwargs and default values not allowed)
+				sig = signature(func)
+				if len(sig.parameters) == len(args):
+					return func(*args)
+				else:
+					raise exceptions.WrongArgumentCount(ctx.IDENTIFIER(), len(args), len(sig.parameters))
+		raise exceptions.FunctionNotDefined(ctx.IDENTIFIER())

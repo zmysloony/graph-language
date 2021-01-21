@@ -181,3 +181,9 @@ def test_function_calls():
 	v = gparse('a = <-1,1,#ff0000>; func(a); def func(dataPoint){dataPoint.x=dataPoint.y; dataPoint.color=#0000ff;}')
 	assert v.variables.variables['a'].value.x.value == 1
 	assert v.variables.variables['a'].value.color.value == '#0000ff'
+	with pytest.raises(exceptions.FunctionNotDefined):
+		gparse('a();')
+
+
+def test_builtins():
+	gparse('bar(); pie(); render();')
