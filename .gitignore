@@ -3,3 +3,5 @@
 local
 __pycache__
 gen/glang*
+src/grapher/css/*.css
+.idea/watcherTasks.xml
