@@ -82,7 +82,12 @@ array
 ;
 
 // basic data types
-string: STRING | DQUOT_STRING ;
+string_element
+: (STRING | DQUOT_STRING)												#regularString
+| ((STRING PLUS math_expression) | (DQUOT_STRING PLUS math_expression))	#stringifiedMathExp
+;
+string_addition: string_element PLUS string_element ;
+string: string_element | string_addition ;
 color: COLOR ;
 
 // data types for charts
@@ -128,12 +133,11 @@ plus_minus: PLUS | MINUS ;
 mul_div: MUL | DIV ;
 
 // r-value and l-value
-// TODO add array access by integer identifier
 identifier_ext
-:	identifier_ext DOT IDENTIFIER			#propertyAccess
-|	identifier_ext DOT string				#jsonAccess
-|	identifier_ext SQ_L NUMBER SQ_R			#arrayAccess
-| 	IDENTIFIER								#genericIdentifier
+:	identifier_ext DOT IDENTIFIER					#propertyAccess
+|	identifier_ext DOT string						#jsonAccess
+|	identifier_ext SQ_L math_expression SQ_R		#arrayAccess
+| 	IDENTIFIER										#genericIdentifier
 ;
 l_value: COLOR_SIGN? identifier_ext ;
 r_value_list: (r_value COMMA)+ r_value ; // TODO get rid of r_value_list

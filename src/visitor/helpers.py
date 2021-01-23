@@ -1,9 +1,9 @@
-import collections
 import typing
+
 from antlr4 import ParserRuleContext
 from antlr4.tree.Tree import TerminalNodeImpl
 
-from visitor import exceptions, types
+from src.visitor import exceptions, types
 
 
 class Function:
@@ -66,14 +66,17 @@ class VarTree:
 		except exceptions.ParsingException:
 			return self.declare(identifier)
 
-	def set(self, identifier, value, value_type) -> Var:
+	def set(self, identifier, value=None, value_type=None, var=None) -> Var:
 		node = self
 		while node:		# try to find the value in parent nodes
 			if node.variables.get(identifier.symbol.text):
 				break
 			node = node.exit()
 		node = node if node else self
-		node.variables[identifier.symbol.text] = Var(value, value_type)
+		if var:
+			node.variables[identifier.symbol.text] = var
+		else:
+			node.variables[identifier.symbol.text] = Var(value, value_type)
 		return node.variables[identifier.symbol.text]
 
 	def copy_into(self, variables):

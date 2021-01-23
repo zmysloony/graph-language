@@ -1,6 +1,8 @@
 from antlr4 import ParserRuleContext
 from antlr4.tree.Tree import TerminalNodeImpl
 
+from src.utils import number_th
+
 
 class ParsingException(Exception):
 	def __init__(self, rule):
@@ -30,10 +32,11 @@ class IdentifierNotDefined(ParsingException):
 
 
 class IncorrectType(ParsingException):
-	def __init__(self, rule, actual_type=None, expected_types=None):
+	def __init__(self, rule, actual_type=None, expected_types=None, nth=None):
 		super().__init__(rule)
 		self.actual = actual_type
 		self.expected = expected_types
+		self.nth = nth
 
 	def actual_str(self):
 		if self.actual:
@@ -51,8 +54,14 @@ class IncorrectType(ParsingException):
 				expected_str = self.expected
 			return ', expected to have type ({})'.format(expected_str)
 
+	def identifer_or_nth_str(self):
+		if self.nth:
+			return '{} value of \'{}\' '.format(number_th(self.nth+1), self.name)
+		else:
+			return 'Identifer \'{}\' '.format(self.name)
+
 	def error_msg(self):
-		return 'Identifier \'{}\' is of incorrect type{}{}.'.format(self.name, self.actual_str(), self.expected_str())
+		return '{} is of incorrect type{}{}.'.format(self.identifer_or_nth_str(), self.actual_str(), self.expected_str())
 
 
 class AttributeNotDefined(ParsingException):
@@ -116,3 +125,8 @@ class WrongArgumentCount(ParsingException):
 
 	def error_msg(self):
 		return 'Function \'{}\' expects {} arguments, {} given.'.format(self.name, self.expected, self.count)
+
+
+class FunctionNotDefined(ParsingException):
+	def error_msg(self):
+		return 'Function \'{}\' not defined.'.format(self.name)

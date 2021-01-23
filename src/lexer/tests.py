@@ -1,5 +1,6 @@
-from gen.glangLexer import glangLexer as gl
-from utils import LexerSyntaxException, assert_tokens, glex
+from generated.src.glangLexer import glangLexer as gl
+from src.utils import LexerSyntaxException, assert_tokens
+from src.tools import glex
 
 
 def test_basic_math_ops():

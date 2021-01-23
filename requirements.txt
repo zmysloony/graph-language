@@ -1,2 +1,4 @@
 antlr4-python3-runtime==4.9
 pytest==6.2.1
+libsass==0.20.1
+pyinstaller==4.2

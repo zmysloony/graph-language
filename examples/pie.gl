@@ -1,0 +1,11 @@
+red= #ff0000;
+blue = #0000ff;
+green = #00ff00;
+
+a = [<'one '+1, 1, red>];
+a += <'two '+2, 4, blue>;
+a += <'three '+3, 9, green>;
+
+
+
+pie(a, 'test');

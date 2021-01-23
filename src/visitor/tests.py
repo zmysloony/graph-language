@@ -1,7 +1,8 @@
 import pytest
 
-from utils import gparse, UnexpectedToken, ParserSyntaxException
-from visitor import types, exceptions
+from src.utils import UnexpectedToken, ParserSyntaxException
+from ..tools import gparse
+from . import types, exceptions
 
 
 def test_number_assignment():
@@ -25,6 +26,10 @@ def test_logical_expressions():
 	v.variables.assert_variable('a', False, types.BOOLEAN)
 	v = gparse('a = 125 > false;')
 	v.variables.assert_variable('a', True, types.BOOLEAN)
+	v = gparse('a = 125 > 90; b = 90 > 125; c = 125 > 90 & 90 > 125;')
+	v.variables.assert_variable('a', True)
+	v.variables.assert_variable('b', False)
+	v.variables.assert_variable('c', False)
 	v = gparse('a = 125 > 90 & 90 > 125 | !(125 > 90 & 90 > 125);')
 	v.variables.assert_variable('a', True, types.BOOLEAN)
 	v = gparse('a = (1 == true) & (0 == false) & (1 != 0) & (1 >= true) & (1 <= true);')
@@ -32,6 +37,11 @@ def test_logical_expressions():
 
 
 def test_math_expressions():
+	v = gparse('a = 1+1; b = 2-2; c = 3*3; d = 4/4;')
+	v.variables.assert_variable('a', 2)
+	v.variables.assert_variable('b', 0)
+	v.variables.assert_variable('c', 9)
+	v.variables.assert_variable('d', 1)
 	v = gparse('a = 12.1 + 0.909 + 11 - 2;')
 	v.variables.assert_variable('a', 22.009)
 	v = gparse('a = 121 / 11;')
@@ -45,7 +55,7 @@ def test_math_expressions():
 
 
 def test_color_assignment_with_new_variable():
-	with pytest.raises(exceptions.IncorrectType):
+	with pytest.raises(exceptions.IdentifierNotDefined):
 		gparse('#a = #ff0000;')
 
 
@@ -78,6 +88,15 @@ def test_property_access():
 	v.variables.assert_variable('b', '#ff0000', types.COLOR)
 
 
+def test_array_access():
+	v = gparse('a = [0,1,2,"test",3]; b = a[3];')
+	v.variables.assert_variable('b', 'test')
+	v = gparse('a = [0,1]; b = a[0 + 1];')
+	v.variables.assert_variable('b', 1)
+	v = gparse('a = [0,1]; b = a[a[0] + 1];')
+	v.variables.assert_variable('b', 1)
+
+
 def test_lists():
 	v = gparse('b = 7; a = [<1,-1,#ff00ff>, 15, "test", b]; c = a[0].color;')
 	assert v.variables.variables['a'].type == types.LIST
@@ -93,7 +112,7 @@ def test_lists():
 	assert v.variables.variables['a'].value[3].value == 7
 	assert v.variables.variables['a'].value[3].type == types.NUMBER
 	v.variables.assert_variable('c', '#ff00ff', types.COLOR)
-	
+
 
 def test_json_strings():
 	gparse('a = {};')
@@ -172,3 +191,10 @@ def test_function_calls():
 	v = gparse('a = <-1,1,#ff0000>; func(a); def func(dataPoint){dataPoint.x=dataPoint.y; dataPoint.color=#0000ff;}')
 	assert v.variables.variables['a'].value.x.value == 1
 	assert v.variables.variables['a'].value.color.value == '#0000ff'
+	with pytest.raises(exceptions.FunctionNotDefined):
+		gparse('a();')
+
+
+def test_builtins():
+	gparse('bar([<"test", 15, #ff0000>], "name");')
+	gparse('red= #ff0000;blue = #0000ff;green = #00ff00;a = [<""+1, 1, red>];a += <""+2, 4, blue>;a += <""+3, 9, green>;a[1].color = #a[0];red = #f0f0f0;a[1].color = blue;')

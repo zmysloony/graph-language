@@ -1,0 +1,140 @@
+html, body {
+  height: 500px;
+  font-family: "fira-sans-2",sans-serif;
+  color: #333;
+}
+
+dl {
+  vertical-align: top;
+  display: inline-block;
+  background-color: white;
+  width: 100%;
+  max-width: 700px;
+  position: relative;
+  padding: 20px;
+}
+
+dt {
+  width: 100%;
+  font-weight: 700;
+  display: block;
+  text-align: center;
+  font-size: 1.2em;
+  margin-bottom: 20px;
+  margin-left: 130px;
+}
+
+.bar {
+  &__text {
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    height: 40px;
+    width: 130px;
+    background-color: white;
+    position: absolute;
+    left: 0;
+    justify-content: flex-end;
+  }
+
+  &__percentage {
+    font-size: .8em;
+    line-height: 1;
+    height: 40px;
+    margin-left: 130px;
+    background: repeating-linear-gradient(to right, #ddd, #ddd 1px, #fff 1px, #fff 5%);
+
+    &:after {
+      content: "";
+      display: block;
+      background-color: var(--bar-color);
+      width: 50px;
+      margin-bottom: 10px;
+      height: 90%;
+      position: relative;
+      top: 50%;
+      transform: translateY(-50%);
+      transition: background-color .3s ease;
+      cursor: pointer;
+    }
+    &:hover,
+    &:focus {
+      &:after {
+        background-color: #aaa;
+      }
+    }
+  }
+}
+
+@for $i from 1 through 1000 {
+  .bar__percentage-#{$i} {
+    &:after {
+      $value: ($i * 0.1%);
+      width: $value;
+    }
+  }
+}
+.pie {
+  display: inline-block;
+  vertical-align: middle;
+  background: #639;
+  border-radius: 100%;
+  height: calc(var(--size) * 1px);
+  width: calc(var(--size) * 1px);
+  overflow: hidden;
+  position: relative;
+
+  &__legend {
+    display: inline-block;
+    vertical-align: middle;
+    margin-left: 16px;
+
+    &__entry {
+      margin-bottom: 3px;
+
+      &__percent {
+        display: inline-block;
+        background-color: var(--bg);
+        color: black;
+        text-shadow: 0 0 1px white;
+        width: 40px;
+        text-align: right;
+        padding-right: 3px;
+        border-radius: 3px;
+      }
+      &__desc {
+        padding-left: 5px;
+        display: inline-block;
+      }
+    }
+  }
+}
+.pie__segment:after,
+.pie__segment:before {
+  background: var(--bg);
+  content: '';
+  height: 100%;
+  position: absolute;
+  width: 100%
+}
+.pie__segment:before {
+  --degrees: calc((var(--value) / 100) * 360);
+  transform: translate(0, 100%) rotate(calc(var(--degrees) * 1deg));
+  transform-origin: 50% 0%;
+}
+.pie__segment:after {
+  opacity: var(--over50, 0);
+}
+.pie__segment {
+  --a: calc(var(--over50, 0) * -100%);
+  --b: calc((1 + var(--over50, 0)) * 100%);
+  --degrees: calc((var(--offset, 0) / 100) * 360);
+  height: 100%;
+  width: 100%;
+  position: absolute;
+  transform: translate(0, -50%) rotate(90deg) rotate(calc(var(--degrees) * 1deg));
+  clip-path: polygon(var(--a) var(--a), var(--b) var(--a), var(--b) var(--b), var(--a) var(--b));
+  -webkit-clip-path: polygon(var(--a) var(--a), var(--b) var(--a), var(--b) var(--b), var(--a) var(--b));
+  transform-origin: 50% 100%;
+  z-index: calc(1 + var(--over50));
+}
