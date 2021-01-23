@@ -1,3 +1,4 @@
+import os
 import typing
 from copy import copy
 from inspect import signature
@@ -7,6 +8,7 @@ from antlr4 import ParserRuleContext
 from generated.src.glangParser import glangParser
 from generated.src.glangVisitor import glangVisitor
 from src.grapher import builtins
+from src.grapher.builtins import RESULT_DIR, insert_css
 from src.visitor import helpers, types, exceptions
 from src.visitor.helpers import VarTree, to_number_or_int, Var, Function, ReturnException
 
@@ -18,6 +20,7 @@ class GVisitor(glangVisitor):
 		self.variables: VarTree = VarTree(ParserRuleContext())
 		self.builtins: typing.Dict = builtins.FUNCTIONS
 		self.functions: typing.Dict[str, Function] = {}
+		self.html = ''
 
 	def enter_context(self, context: ParserRuleContext):
 		self.variables = self.variables.enter(context)
@@ -146,6 +149,9 @@ class GVisitor(glangVisitor):
 		arithm_result = eval(self.visit(ctx.math_expression()))
 		string = ctx.STRING() if ctx.STRING() else ctx.DQUOT_STRING()
 		return Var(string.getText()[1:-1] + str(arithm_result), types.STRING)
+
+	def visitString_addition(self, ctx:glangParser.String_additionContext):
+		return Var(self.visit(ctx.string_element(0)).value + self.visit(ctx.string_element(1)).value, types.STRING)
 
 	def visitColor(self, ctx:glangParser.ColorContext):
 		return Var(ctx.COLOR().getText(), types.COLOR)
@@ -365,10 +371,12 @@ class GVisitor(glangVisitor):
 		else:
 			func = self.builtins.get(name)
 			if func:
-				# check param count (kwargs and default values not allowed)
 				sig = signature(func)
-				if len(sig.parameters) - 1 == len(args):
-					return func(ctx.IDENTIFIER(), *args)
+				if len(sig.parameters) == len(args):
+					return func(ctx.IDENTIFIER(), *args, visitor=self)
 				else:
-					raise exceptions.WrongArgumentCount(ctx.IDENTIFIER(), len(args), len(sig.parameters)-1)
+					raise exceptions.WrongArgumentCount(ctx.IDENTIFIER(), len(args), len(sig.parameters))
 		raise exceptions.FunctionNotDefined(ctx.IDENTIFIER())
+
+	def generate_total_html(self):
+		open(os.path.join(RESULT_DIR, 'result.html'), 'w+').write(insert_css(self.html))
