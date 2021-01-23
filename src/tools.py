@@ -1,8 +1,8 @@
 import antlr4
 from antlr4 import InputStream
 
-from generated.glangLexer import glangLexer
-from generated.glangParser import glangParser
+from generated.src.glangLexer import glangLexer
+from generated.src.glangParser import glangParser
 from src.utils import LexerErrorListener, ParserErrorListener
 from src.visitor.core import GVisitor
 

@@ -82,7 +82,10 @@ array
 ;
 
 // basic data types
-string: STRING | DQUOT_STRING ;
+string
+: (STRING | DQUOT_STRING)												#regularString
+| ((STRING PLUS math_expression) | (DQUOT_STRING PLUS math_expression))	#stringifiedMathExp
+;
 color: COLOR ;
 
 // data types for charts

@@ -1,4 +1,4 @@
-from generated.glangLexer import glangLexer as gl
+from generated.src.glangLexer import glangLexer as gl
 from src.utils import LexerSyntaxException, assert_tokens
 from src.tools import glex
 

@@ -2,7 +2,7 @@ import re
 
 from antlr4.error.ErrorListener import ErrorListener, ConsoleErrorListener
 
-from generated.glangLexer import glangLexer
+from generated.src.glangLexer import glangLexer
 
 
 def number_th(number):

@@ -1,10 +1,11 @@
 import typing
-from inspect import signature, getmembers, isfunction
+from copy import copy
+from inspect import signature
 
 from antlr4 import ParserRuleContext
 
-from generated.glangParser import glangParser
-from generated.glangVisitor import glangVisitor
+from generated.src.glangParser import glangParser
+from generated.src.glangVisitor import glangVisitor
 from src.grapher import builtins
 from src.visitor import helpers, types, exceptions
 from src.visitor.helpers import VarTree, to_number_or_int, Var, Function, ReturnException
@@ -31,53 +32,80 @@ class GVisitor(glangVisitor):
 		for seq in ctx.sequential_code():
 			self.visitSequential_code(seq)
 
-	def visitGenericIdentifier(self, ctx:glangParser.GenericIdentifierContext, create=False):
-		if create:
-			return self.variables.get_or_declare(ctx.IDENTIFIER())
+	def visitGenericIdentifier(self, ctx:glangParser.GenericIdentifierContext, set_to=None):
+		if set_to:
+			self.variables.set(ctx.IDENTIFIER(), var=set_to)
 		else:
 			return self.variables.get(ctx.IDENTIFIER())
 
-	def visitPropertyAccess(self, ctx:glangParser.PropertyAccessContext):
+	def visitIdentifierExt(self, ctx, set_to=None):
+		if isinstance(ctx, glangParser.PropertyAccessContext):
+			return self.visitPropertyAccess(ctx, set_to=set_to)
+		if isinstance(ctx, glangParser.ArrayAccessContext):
+			return self.visitArrayAccess(ctx, set_to=set_to)
+		if isinstance(ctx, glangParser.JsonAccessContext):
+			return self.visitJsonAccess(ctx, set_to=set_to)
+
+	def visitPropertyAccess(self, ctx:glangParser.PropertyAccessContext, set_to=None):
 		try:
+			if set_to:
+				setattr(self.visit(ctx.identifier_ext()).value, ctx.IDENTIFIER().symbol.text, set_to)
 			return getattr(self.visit(ctx.identifier_ext()).value, ctx.IDENTIFIER().symbol.text)
 		except AttributeError:
 			raise exceptions.AttributeNotDefined(ctx.identifier_ext(), ctx.IDENTIFIER())
 
-	def visitJsonAccess(self, ctx:glangParser.JsonAccessContext):
+	def visitJsonAccess(self, ctx:glangParser.JsonAccessContext, set_to=None):
 		var = self.visit(ctx.identifier_ext())
+		# var = self.visitIdentifierExt(ctx, set_to=set_to)
 		if var.type != types.J_OBJECT:
 			raise exceptions.JsonAccessOnNonJsonVariable(ctx.identifier_ext())
 		attr_name = self.visit(ctx.string()).value
 		if attr_name in var.value:
+			if set_to:
+				var.value[attr_name] = set_to
 			return var.value[attr_name]
 		else:
 			raise exceptions.AttributeNotDefined(ctx.identifier_ext(), attr_name)
 
-	def visitArrayAccess(self, ctx:glangParser.ArrayAccessContext):
+	def visitArrayAccess(self, ctx:glangParser.ArrayAccessContext, set_to=None):
 		var = self.visit(ctx.identifier_ext())
+		# var = self.visitIdentifierExt(ctx, set_to)
 		if var.type != types.LIST:
 			raise exceptions.IncorrectType(ctx.identifier_ext(), var.type, types.LIST)
 		number = to_number_or_int(ctx.NUMBER())
 		if not isinstance(number, int):
 			raise exceptions.IncorrectType(number, expected_types=types.INTEGER)
 		try:
+			if set_to:
+				var.value[number] = set_to
 			return var.value[number]
 		except IndexError:
 			raise exceptions.ListIndexError(ctx.identifier_ext(), number, len(var.value))
 
-	def visitL_value(self, ctx:glangParser.L_valueContext, create=False):
+	def visitL_value(self, ctx:glangParser.L_valueContext, set_to=None):
 		identifier = ctx.identifier_ext()
-		if isinstance(identifier, glangParser.GenericIdentifierContext):
-			var = self.visitGenericIdentifier(identifier, create)
-		else:
-			var = self.visit(identifier)
-
 		if ctx.COLOR_SIGN():
-			if var.type in [types.DATA_POINT, types.NAMED_VALUE]:
+			var = self.visit(identifier)
+			if var.type not in [types.DATA_POINT, types.NAMED_VALUE]:
+				raise exceptions.IncorrectType(identifier, var.type, (types.DATA_POINT, types.NAMED_VALUE))
+			if set_to:
+				var.value.color = set_to
 				return var.value.color
 			else:
-				raise exceptions.IncorrectType(identifier, var.type, (types.DATA_POINT, types.NAMED_VALUE))
+				return var.value.color
+
+		if isinstance(identifier, glangParser.GenericIdentifierContext):
+			var = self.visitGenericIdentifier(identifier, set_to=set_to)
+		else:
+			var = self.visitIdentifierExt(identifier, set_to=set_to)
 		return var
+
+		# if ctx.COLOR_SIGN():
+		# 	if var.type in [types.DATA_POINT, types.NAMED_VALUE]:
+		# 		return var.value.color
+		# 	else:
+		# 		raise exceptions.IncorrectType(identifier, var.type, (types.DATA_POINT, types.NAMED_VALUE))
+		# return var
 
 	def visitData_point(self, ctx:glangParser.Data_pointContext):
 		return Var(helpers.DataPoint(self.visit(ctx.x), self.visit(ctx.y)), types.DATA_POINT)
@@ -100,18 +128,24 @@ class GVisitor(glangVisitor):
 		return Var(var, types.NAMED_VALUE)
 
 	def visitAssignment(self, ctx:glangParser.AssignmentContext):
-		l_var = self.visitL_value(ctx.l_value(), True)
+		# l_var = self.visitL_value(ctx.l_value(), True)
 		r_var = self.visit(ctx.r_value())
-		l_var.value = r_var.value
-		l_var.type = r_var.type
+		self.visitL_value(ctx.l_value(), set_to=Var(r_var.value, r_var.type))
+		# l_var.value = r_var.value
+		# l_var.type = r_var.type
 
 	def visitBoolean(self, ctx:glangParser.BooleanContext):
 		if ctx.TRUE():
 			return 'True'
 		return 'False'
 
-	def visitString(self, ctx: glangParser.StringContext):
+	def visitRegularString(self, ctx: glangParser.RegularStringContext):
 		return Var(ctx.getText()[1:-1], types.STRING)
+
+	def visitStringifiedMathExp(self, ctx:glangParser.StringifiedMathExpContext):
+		arithm_result = eval(self.visit(ctx.math_expression()))
+		string = ctx.STRING() if ctx.STRING() else ctx.DQUOT_STRING()
+		return Var(string.getText()[1:-1] + str(arithm_result), types.STRING)
 
 	def visitColor(self, ctx:glangParser.ColorContext):
 		return Var(ctx.COLOR().getText(), types.COLOR)
@@ -120,7 +154,7 @@ class GVisitor(glangVisitor):
 		return Var(eval(self.visit(ctx.math_expression())), types.NUMBER)
 
 	def visitIdentifierLExpression(self, ctx:glangParser.IdentifierLExpressionContext):
-		var = self.visitL_value(ctx.l_value(), False)
+		var = self.visitL_value(ctx.l_value())
 		if var.type in (types.BOOLEAN, types.NUMBER):
 			return var.value
 		raise exceptions.IncorrectType(ctx.l_value(), var.type, (types.BOOLEAN, types.NUMBER))
@@ -193,9 +227,9 @@ class GVisitor(glangVisitor):
 		if ctx.COLOR_SIGN():
 			if var.type not in [types.DATA_POINT, types.NAMED_VALUE]:
 				raise exceptions.IncorrectType(ctx.identifier_ext(), var.type, [types.DATA_POINT, types.NAMED_VALUE])
-			return var.value.color
+			return copy(var.value.color)
 		else:
-			return var
+			return copy(var)
 
 	def visitR_value_list(self, ctx:glangParser.R_value_listContext):
 		array = []
