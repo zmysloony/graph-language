@@ -88,6 +88,15 @@ def test_property_access():
 	v.variables.assert_variable('b', '#ff0000', types.COLOR)
 
 
+def test_array_access():
+	v = gparse('a = [0,1,2,"test",3]; b = a[3];')
+	v.variables.assert_variable('b', 'test')
+	v = gparse('a = [0,1]; b = a[0 + 1];')
+	v.variables.assert_variable('b', 1)
+	v = gparse('a = [0,1]; b = a[a[0] + 1];')
+	v.variables.assert_variable('b', 1)
+
+
 def test_lists():
 	v = gparse('b = 7; a = [<1,-1,#ff00ff>, 15, "test", b]; c = a[0].color;')
 	assert v.variables.variables['a'].type == types.LIST

@@ -30,7 +30,7 @@ def random_hex_color():
 	return '#3d9970'
 
 
-@builtin_html_generator
+# @builtin_html_generator
 def render(calling_identifer, data_points, title):
 	if not data_points.type == types.LIST:
 		raise exceptions.IncorrectType(calling_identifer, expected_types=types.LIST)
@@ -44,6 +44,7 @@ def render(calling_identifer, data_points, title):
 	x_range = (min(pv, key=itemgetter(0))[0], max(pv, key=itemgetter(0))[0])
 	for i, v in pv:
 		pass
+	# TODO
 
 
 @builtin_html_generator

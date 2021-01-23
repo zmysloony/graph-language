@@ -59,7 +59,6 @@ class GVisitor(glangVisitor):
 
 	def visitJsonAccess(self, ctx:glangParser.JsonAccessContext, set_to=None):
 		var = self.visit(ctx.identifier_ext())
-		# var = self.visitIdentifierExt(ctx, set_to=set_to)
 		if var.type != types.J_OBJECT:
 			raise exceptions.JsonAccessOnNonJsonVariable(ctx.identifier_ext())
 		attr_name = self.visit(ctx.string()).value
@@ -72,18 +71,17 @@ class GVisitor(glangVisitor):
 
 	def visitArrayAccess(self, ctx:glangParser.ArrayAccessContext, set_to=None):
 		var = self.visit(ctx.identifier_ext())
-		# var = self.visitIdentifierExt(ctx, set_to)
 		if var.type != types.LIST:
 			raise exceptions.IncorrectType(ctx.identifier_ext(), var.type, types.LIST)
-		number = to_number_or_int(ctx.NUMBER())
-		if not isinstance(number, int):
-			raise exceptions.IncorrectType(number, expected_types=types.INTEGER)
+		index = eval(self.visit(ctx.math_expression()))
+		if not isinstance(index, int):
+			raise exceptions.IncorrectType(index, expected_types=types.INTEGER)
 		try:
 			if set_to:
-				var.value[number] = set_to
-			return var.value[number]
+				var.value[index] = set_to
+			return var.value[index]
 		except IndexError:
-			raise exceptions.ListIndexError(ctx.identifier_ext(), number, len(var.value))
+			raise exceptions.ListIndexError(ctx.identifier_ext(), index, len(var.value))
 
 	def visitL_value(self, ctx:glangParser.L_valueContext, set_to=None):
 		identifier = ctx.identifier_ext()

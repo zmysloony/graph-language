@@ -84,9 +84,9 @@ Used to generate the HTML+CSS content, as of now theres only a few of them:
 Creates a pie chart using a list of Named Values, with a specified title at the top.
 ##### *bar(list_of_names_values, title)*
 Creates a bar chart using a list of Named Values, with a specified title at the top.
-##### *render(list_of_data_points, title)*
-Creates a chart of an *y(x)* function, where *(x,y)* pairs are extracted from a list of Data Points.
-Adds a title at the top of the chart.
+##### ~~*render(list_of_data_points, title)*~~ - ***WIP***
+~~Creates a chart of an *y(x)* function, where *(x,y)* pairs are extracted from a list of Data Points.
+Adds a title at the top of the chart.~~
 ### Functions
 Functions can be defined only at the top level of user's code.
 Functions can be called even if they are defined later in the code.
