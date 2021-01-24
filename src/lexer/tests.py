@@ -1,5 +1,5 @@
 from generated.src.glangLexer import glangLexer as gl
-from src.utils import LexerSyntaxException, assert_tokens
+from src.utils import SyntaxException, assert_tokens
 from src.tools import glex
 
 
@@ -30,7 +30,7 @@ def test_chart_points_assignment():
 def test_unrecognized():
 	try:
 		tokens = glex('`')
-	except LexerSyntaxException:
+	except SyntaxException:
 		assert True
 		return
 	assert False
