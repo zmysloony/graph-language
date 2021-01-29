@@ -1,70 +1,75 @@
 import pytest
 
 from src.utils import UnexpectedToken, ParserSyntaxException
-from ..tools import gparse
 from . import types, exceptions
+from ..tools import gparse
 
 
-def test_number_assignment():
-	v = gparse('a = -1; b = 15; c = 0; d = 15.10; e = 0.992;')
-	v.variables.assert_variable('a', -1, types.NUMBER)
-	v.variables.assert_variable('b', 15, types.NUMBER)
-	v.variables.assert_variable('c', 0, types.NUMBER)
-	v.variables.assert_variable('d', 15.1, types.NUMBER)
-	v.variables.assert_variable('e', 0.992, types.NUMBER)
+def parse_assert_value(code, value, v_type=None):
+	v = gparse('a={};'.format(code))
+	v.variables.assert_variable('a', value, v_type)
 
 
-def test_string_assignment():
-	v = gparse('a = "test"; b = "test"; c = "a4AFh8a9sf09;FAU()[]\'{}-=)()(!&@$";')
-	v.variables.assert_variable('a', 'test', types.STRING)
-	v.variables.assert_variable('b', 'test', types.STRING)
-	v.variables.assert_variable('c', 'a4AFh8a9sf09;FAU()[]\'{}-=)()(!&@$', types.STRING)
-
-
-def test_logical_expressions():
-	v = gparse('a = 1 > true;')
-	v.variables.assert_variable('a', False, types.BOOLEAN)
-	v = gparse('a = 125 > false;')
-	v.variables.assert_variable('a', True, types.BOOLEAN)
-	v = gparse('a = 125 > 90; b = 90 > 125; c = 125 > 90 & 90 > 125;')
-	v.variables.assert_variable('a', True)
-	v.variables.assert_variable('b', False)
-	v.variables.assert_variable('c', False)
-	v = gparse('a = 125 > 90 & 90 > 125 | !(125 > 90 & 90 > 125);')
-	v.variables.assert_variable('a', True, types.BOOLEAN)
-	v = gparse('a = (1 == true) & (0 == false) & (1 != 0) & (1 >= true) & (1 <= true);')
-	v.variables.assert_variable('a', True, types.BOOLEAN)
-
-
-def test_math_expressions():
-	v = gparse('a = 1+1; b = 2-2; c = 3*3; d = 4/4;')
-	v.variables.assert_variable('a', 2)
-	v.variables.assert_variable('b', 0)
-	v.variables.assert_variable('c', 9)
-	v.variables.assert_variable('d', 1)
-	v = gparse('a = 12.1 + 0.909 + 11 - 2;')
-	v.variables.assert_variable('a', 22.009)
-	v = gparse('a = 121 / 11;')
-	v.variables.assert_variable('a', 11)
-	v = gparse('a = 121 / -11;')
-	v.variables.assert_variable('a', -11)
-	v = gparse('a = 123 / 15;')
-	v.variables.assert_variable('a', 8.2)
-	v = gparse('a = -5*(12-2)*0.21;')
-	v.variables.assert_variable('a', -10.5)
-
-
-def test_color_assignment_with_new_variable():
+def test_color_assignment():
+	parse_assert_value('#123458', '#123458', types.COLOR)
+	parse_assert_value('#abcdef', '#abcdef', types.COLOR)
+	parse_assert_value('#ff1230', '#ff1230', types.COLOR)
+	with pytest.raises(exceptions.IncorrectType):
+		gparse('a = 15; #a = #ff0000;')
 	with pytest.raises(exceptions.IdentifierNotDefined):
 		gparse('#a = #ff0000;')
 
 
-def test_color_assignment_with_wrong_type_variable():
-	with pytest.raises(exceptions.IncorrectType):
-		gparse('a = 15; #a = #ff0000;')
+def test_number_assignment():
+	parse_assert_value('15', 15, types.NUMBER)
+	parse_assert_value('-1', -1, types.NUMBER)
+	parse_assert_value('0', 0, types.NUMBER)
+	parse_assert_value('15.1', 15.1, types.NUMBER)
+	parse_assert_value('0.0952', 0.0952, types.NUMBER)
+	with pytest.raises(ParserSyntaxException):
+		gparse('a=0,0952;')
 
 
-def test_correct_color_assignment():
+def test_logical_expressions():
+	parse_assert_value('1 > true;', False, types.BOOLEAN)
+	parse_assert_value('125 > false', True, types.BOOLEAN)
+	parse_assert_value('125 > 90 & 90 > 125 | !(125 > 90 & 90 > 125)', True, types.BOOLEAN)
+
+	v = gparse('a = 125 > 90; b = 90 > 125; c = 125 > 90 & 90 > 125;')
+	v.variables.assert_variable('a', True)
+	v.variables.assert_variable('b', False)
+	v.variables.assert_variable('c', False)
+
+	parse_assert_value('(1 == true) & (0 == false) & (1 != 0) & (1 >= true) & (1 <= true)', True, types.BOOLEAN)
+
+
+def test_math_expressions():
+	parse_assert_value('1+1', 2, types.NUMBER)
+	parse_assert_value('2-2', 0, types.NUMBER)
+	parse_assert_value('3*3', 9, types.NUMBER)
+	parse_assert_value('4/4', 1, types.NUMBER)
+	parse_assert_value('12.1 + 0.909 + 11 - 2', 22.009, types.NUMBER)
+	parse_assert_value('121/11', 11, types.NUMBER)
+	parse_assert_value('121/-11', -11, types.NUMBER)
+	parse_assert_value('-121/11', -11, types.NUMBER)
+	parse_assert_value('123/15', 8.2, types.NUMBER)
+	parse_assert_value('-5*(12-2)*0.21', -10.5, types.NUMBER)
+
+
+def test_string_assignment():
+	parse_assert_value('""', '', types.STRING)
+	parse_assert_value('"b"', 'b', types.STRING)
+	parse_assert_value('"test"', 'test', types.STRING)
+	parse_assert_value('\'test\'', 'test', types.STRING)
+	parse_assert_value('"a4AFh8a9sf09;FAU()[]\'{}-=)()(!&@$;"', 'a4AFh8a9sf09;FAU()[]\'{}-=)()(!&@$;', types.STRING)
+	parse_assert_value('\'\'+1', '1', types.STRING)
+	parse_assert_value('"abc"+123', 'abc123', types.STRING)
+	parse_assert_value('"abc"+123*0.5+1', 'abc62.5', types.STRING)
+	with pytest.raises(ParserSyntaxException):
+		gparse('a="te"st";')
+
+
+def test_data_points_and_named_values():
 	v = gparse('a = <1,-1.01>; #a = #ff0000; b = <"test", -15, #ff0000>; #b = #00ff00;')
 	assert v.variables.variables['a'].value.x.value == 1
 	assert v.variables.variables['a'].value.x.type == types.NUMBER
@@ -131,9 +136,13 @@ def test_json_strings():
 
 
 def test_inplace_operators():
-	v = gparse('a = 2; a += 2; a -= 3; a *= 4; a /= 0.5; b = "test"; b += "ing"; c = []; c += b; c += a + 2;')
+	code_a = 'a = 2; a += 2; a -= 3; a *= 4; a /= 0.5;'
+	code_b = 'b = "test"; b += "ing";'
+	v = gparse(code_a)
 	v.variables.assert_variable('a', 8, types.NUMBER)
+	v = gparse(code_b)
 	v.variables.assert_variable('b', 'testing', types.STRING)
+	v = gparse(code_a + code_b + 'c = []; c += b; c += a + 2;')
 	assert v.variables.variables['c'].value[0].value == 'testing'
 	assert v.variables.variables['c'].value[0].type == types.STRING
 	assert v.variables.variables['c'].value[1].value == 10
@@ -142,7 +151,6 @@ def test_inplace_operators():
 		gparse('a = ""; a += 2;')
 	with pytest.raises(exceptions.IllegalOperator):
 		gparse('a = {}; a += 2;')
-	with pytest.raises(exceptions.IllegalOperator):
 		gparse('a = "test"; a -= "est";')
 
 
@@ -159,14 +167,14 @@ def test_for_loop():
 	v = gparse('a = -2; for(a=4; a<=4; a+=1) { a = 7; }')
 	v.variables.assert_variable('a', 8)
 	v = gparse('a = 2; for(i=0; i<3; i+=1) { a *= a+i; }')
-	v.variables.assert_variable('a', 2*2*(2*2+1)*(2*2*(2*2+1)+2))
+	v.variables.assert_variable('a', 2 * 2 * (2 * 2 + 1) * (2 * 2 * (2 * 2 + 1) + 2))
 	v = gparse('a = []; for(i=0; i<3; i+=1) { for(j=0; j>-3; j-=1) { a += <i, j, #ff0000>; } }')
 	assert v.variables.variables['a'].type == types.LIST
 	for i in range(3):
 		for j in range(-3):
-			assert v.variables.variables['a'].value[i*3+j].type == types.DATA_POINT
-			assert v.variables.variables['a'].value[i*3+j].value.x.value == i
-			assert v.variables.variables['a'].value[i*3+j].value.y.value == -j
+			assert v.variables.variables['a'].value[i * 3 + j].type == types.DATA_POINT
+			assert v.variables.variables['a'].value[i * 3 + j].value.x.value == i
+			assert v.variables.variables['a'].value[i * 3 + j].value.y.value == -j
 	with pytest.raises(exceptions.IdentifierNotDefined):
 		gparse('a = 2; for(i=0; i<3; i+=1) { a *= a+i; } a = i;')
 
@@ -180,6 +188,10 @@ def test_function_definitions():
 	v = gparse('def func(){} def func(a,b,c){}')
 	assert v.functions['func'].arg_names == ['a', 'b', 'c']
 
+	# built-in function redefinition
+	v = gparse('def pie(){ return "b";}')
+	assert v.functions['pie']
+
 	# function inside a function - incorrect
 	with pytest.raises(ParserSyntaxException):
 		gparse('def func(){ def other(){} }')
@@ -188,13 +200,21 @@ def test_function_definitions():
 def test_function_calls():
 	v = gparse('a = func(1,2,3); def func(a,b,c){return a+b+c;}')
 	v.variables.assert_variable('a', 6)
+
 	v = gparse('a = <-1,1,#ff0000>; func(a); def func(dataPoint){dataPoint.x=dataPoint.y; dataPoint.color=#0000ff;}')
 	assert v.variables.variables['a'].value.x.value == 1
 	assert v.variables.variables['a'].value.color.value == '#0000ff'
+
+	# built-in function redefinition
+	v = gparse('a=pie(); def pie(){ return "b";}')
+	v.variables.assert_variable('a', 'b', types.STRING)
+
 	with pytest.raises(exceptions.FunctionNotDefined):
 		gparse('a();')
 
 
 def test_builtins():
-	gparse('bar([<"test", 15, #ff0000>], "name");')
-	gparse('red= #ff0000;blue = #0000ff;green = #00ff00;a = [<""+1, 1, red>];a += <""+2, 4, blue>;a += <""+3, 9, green>;a[1].color = #a[0];red = #f0f0f0;a[1].color = blue;')
+	v = gparse('pie([<"one", 1>, <"two", 4>, <"three", 9>], "test_title");')
+	assert v.html and v.html is not None and v.html != ''
+	v = gparse('bar([<"test", 15, #ff0000>], "test_title");')
+	assert v.html and v.html is not None and v.html != ''

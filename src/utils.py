@@ -40,7 +40,7 @@ class ParserErrorListener(ConsoleErrorListener):
 		raise ParserSyntaxException(line, column, msg)
 
 
-class LexerSyntaxException(Exception):
+class SyntaxException(Exception):
 	def __init__(self, line, column, msg):
 		self.line = line
 		self.column = column
@@ -50,7 +50,7 @@ class LexerSyntaxException(Exception):
 		return 'Lexer error ({}, {}): {}'.format(self.line, self.column, self.msg)
 
 
-class ParserSyntaxException(LexerSyntaxException):
+class ParserSyntaxException(SyntaxException):
 	def __str__(self):
 
 		return 'Parser error ({}, {}): {}'.format(self.line, self.column, self.msg)
@@ -81,7 +81,7 @@ class LexerErrorListener(ErrorListener):
 		super(LexerErrorListener, self).__init__()
 
 	def syntaxError(self, recognizer, offendingSymbol, line, column, msg, e):
-		raise LexerSyntaxException(line, column, msg)
+		raise SyntaxException(line, column, msg)
 
 	def reportAmbiguity(self, recognizer, dfa, startIndex, stopIndex, exact, ambigAlts, configs):
 		raise Exception("Oh no!!")
